@@ -1,7 +1,7 @@
 ;;; pattern_matcher.lisp
 ;;; a simple pattern matcher
 
-;; driver to test algorithm
+;; main method, test driver
 (defun test-match ()
 	(test-one-match '() '() t)
 	(test-one-match '(ai) '(ai) t)
@@ -43,31 +43,25 @@
 ;; pattern matching algorithm
 (defun match (pattern data)
 
-	; base case: pattern is empty
+	; base case 1: pattern is empty
 	(when (= 0 (length pattern))
 		(if (= 0 (length data))
 			(return-from match t)
 			(return-from match NIL)))
 
+	; base case 2: data is empty
 	(when (= 0 (length data))
 		(if (every #'(lambda (p) (equal p '*)) pattern)
 			(return-from match t)
 			(return-from match NIL)))
 
-	; base case: data is empty
-;	(when (= 0 (length data))
-;		(if (equal (first pattern) '*)
-;			(return-from match (match (rest pattern) data))
-;			(return-from match NIL)))
-
 	(let ((p (first pattern)) (d (first data)))
-		
 		(cond
 			; if p and d are equal or p is ?, recurse
 			((or (equal p d) (equal p '?))
 				(match (rest pattern) (rest data)))
 	
-			; else if p is *, recurse twice and merge results
+			; else if p is *, recurse twice and merge lists
 			((equal p '*)
 				(let ((noData (match (rest pattern) data))
 					 (withData (match pattern (rest data))))
