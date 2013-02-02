@@ -20,9 +20,12 @@
 	(test-one-match '(?y ?z (c v)) '(8 gh (c v) ) '((?z gh)(?y 8)))
 	(test-one-match '(((get) me) out) '(get (me (out))) NIL)
 	(test-one-match '(A * B) '(A A A A A B) t)
-	(test-one-match '(?x * ?y) '(A A A A A B) '((?y b)(?x a)))
+	(test-one-match '(?x * ?y) '(A A A A Applied B) '((?y b)(?x a)))
 	(test-one-match '(? ? ?) '(a (a b) ((a b c))) t)
 	(test-one-match '(a * ?x *) '(a b c d) '(((?x b)) ((?x c)) ((?x d))))
+	(test-one-match '(?x 2 (?x)) '(1 2 (1)) '((?x 1)))
+	(test-one-match '(?x 2 (?x)) '(3 2 (1)) NIL)
+	(test-one-match '(1 (* ?x *)) '(1 (a (b c) d)) '(((?x a)) ((?x (b c))) ((?x d))))
 	"DONE!")
 
 ;; individual test, prints results
@@ -96,7 +99,19 @@
 							NIL)
 						((equal subResult t)
 							newAssoc)
-						((append subResult newAssoc)))))
+						; subResult is an association list
+						; check that subAssoc matches (p d)
+						((let ((subAssoc (find-if #'(lambda (alist) (equal (first alist) p)) subResult)))
+							(cond
+								((equal subAssoc NIL)
+									(append subResult newAssoc))
+								((equal (cadr subAssoc) d)
+									subResult)
+								(NIL)))))))
+
+			; else if p and d are lists, recurse into them
+			((and (listp p) (listp d))
+				(match p d))
 
 			; else no match
 			(NIL))))
