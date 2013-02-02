@@ -28,7 +28,6 @@
 	(test-one-match '(1 (* ?x *)) '(1 (a (b c) d)) '(((?x a)) ((?x (b c))) ((?x d))))
 	"DONE!")
 
-
 ;; individual test, prints results
 (defun test-one-match (pattern data output)
 	(print "---------- RUNNING TEST -----------")
