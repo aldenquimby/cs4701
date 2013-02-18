@@ -12,10 +12,10 @@
 	(let ((cstate (append (copy-list (first state)) (copy-list (second state)) (copy-list (third state))))
           (returned-string "S"))
   		(loop
-		   (if (null cstate) (return returned-string))
-		   (setf returned-string
-		         (concatenate 'string returned-string (subseq "012345678" (first cstate) (1+ (first cstate)))))
-		   (setf cstate (rest cstate))
+		   	(if (null cstate) (return returned-string))
+		   	(setf returned-string
+				(concatenate 'string returned-string (subseq "012345678" (first cstate) (1+ (first cstate)))))
+		   	(setf cstate (rest cstate))
    		) ;loop
   	) ;let
 ) ;defun
@@ -37,39 +37,21 @@
 (defun trace-solution (node) 
 	(cond 
 		((null node) 
-			(print "Beginning of solution") 
-			nil) 
+			(print "Solution:") 
+			nil)
 		(t 
-			(trace-solution (Parent node)) 
-			(print (Operator node)))
-	) ;closes cond
-) ;closes defun 
+			(trace-solution (Parent node))
+			(if (not (null (Operator node)))
+				(print (Operator node)))))
+) ;defun
 
 ;; subtract open-and-closed-nodes from new-nodes
-(defun DIFF (new-nodes open-and-closed-nodes) 
-	(let ((return-nodes nil))
-		(do 
-			;initialize loop variable 
-			((nodes new-nodes (rest nodes)))
-			;exit test 
-			((null nodes) return-nodes) 
-			;body of this loop is another loop 
-			(do 
-				;initialize loop 
-				((scan-nodes open-and-closed-nodes (rest scan-nodes))) 
-				;exit test
-				((null scan-nodes (push node return-nodes))) 
-				;body test if state of node appears on open or closed list 
-				(cond 
-					((state-equal (State (first nodes)) (State (first scan-nodes))) 
-						;break from the inner loop
-						(return nil)))  
-			) ;closes inner do
-		;if the inner loop doesn't end prematurely, the exit test will update "return-nodes" 
-		) ;closes outer do 
-		;return cleaned up daughters
-		return-nodes) 
-) ;closes defun 
+(defun DIFF (new existing)
+	(set-difference 
+		new 
+		existing 
+		:test #'(lambda (a b) (state-equal (State a) (State b))))
+) ;defun
 
 ;; 8 puzzle, swap two states
 (defun swap8 (state from-row from-col to-row to-col)
@@ -90,101 +72,103 @@
 
 ;; 8 puzzle, move the blank NORTH 
 (defun North8 (state)
-	(let ((newstate nil))
-		(cond
-			((= (first (fourth state)) 0) 
-				nil)
-			(t
-				(setf newstate
-					(swap8 (copy-tree state) 
-					(first (fourth state))   ;from row
-					(second (fourth state))  ;from column
-					(decf (first (fourth state))) ;to row
-					(second (fourth state))))) ;to column
-		) ;cond
-	) ;let
+	(cond
+		((= (first (fourth state)) 0) 
+			nil)
+		((swap8 
+			(copy-tree state) 
+			(first (fourth state))   ;from row
+			(second (fourth state))  ;from column
+			(- (first (fourth state)) 1) ;to row
+			(second (fourth state))))) ;to column
 ) ;defun
 
 ;; 8 puzzle, move the blank SOUTH
-(defun South8 (state) 
-	(let ((newstate nil))
-		(cond
-			((= (first (fourth state)) 2) 
-				nil)
-			(t
-				(setf newstate
-					(swap8 (copy-tree state) 
-					(first (fourth state))   ;from row
-					(second (fourth state))  ;from column
-					(incf (first (fourth state))) ;to row
-					(second (fourth state))))) ;to column
-		) ;cond
-	) ;let
+(defun South8 (state)
+	(cond
+		((= (first (fourth state)) 2) 
+			nil)
+		((swap8 
+			(copy-tree state) 
+			(first (fourth state))   ;from row
+			(second (fourth state))  ;from column
+			(+ (first (fourth state)) 1) ;to row
+			(second (fourth state)))) ;to column
+	) ;cond
 ) ;defun
 
 ;; 8 puzzle, move the blank EAST
-(defun East8 (state) 
-	(let ((newstate nil))
-		(cond
-			((= (second (fourth state)) 2) 
-				nil)
-			(t
-				(setf newstate
-					(swap8 (copy-tree state) 
-					(first (fourth state))   ;from row
-					(second (fourth state))  ;from column
-					(first (fourth state))   ;to row
-					(incf (second (fourth state)))))) ;to column
-		) ;cond
-	) ;let
+(defun East8 (state)
+	(cond
+		((= (second (fourth state)) 2) 
+			nil)
+		((swap8 
+			(copy-tree state) 
+			(first (fourth state))   ;from row
+			(second (fourth state))  ;from column
+			(first (fourth state))   ;to row
+			(+ (second (fourth state)) 1))) ;to column
+	) ;cond
 ) ;defun
 
 ;; 8 puzzle, move the blank WEST
-(defun West8 (state) 
-	(let ((newstate nil))
-		(cond
-			((= (second (fourth state)) 0) 
-				nil)
-			(t
-				(setf newstate
-					(swap8 (copy-tree state) 
-					(first (fourth state))   ;from row
-					(second (fourth state))  ;from column
-					(first (fourth state))   ;to row
-					(decf (second (fourth state)))))) ;to column
-		) ;cond
-	) ;let
+(defun West8 (state)
+	(cond
+		((= (second (fourth state)) 0) 
+			nil)
+		((swap8 
+			(copy-tree state) 
+			(first (fourth state))   ;from row
+			(second (fourth state))  ;from column
+			(first (fourth state))   ;to row
+			(- (second (fourth state)) 1))) ;to column
+	) ;cond
 ) ;defun
 
 ;; get successor nodes by applying all operators to node
 (defun successor-function (node) 
 	(let ((son-nodes nil) 
-		  (son-states nil)
-		  (state (first node))) 
-		;apply problem dependent operator 1 
-		(setf son-states (North8 state)) 
-		(setf son-nodes 
-			(mapcar son-states 
-				'(lambda(son-state) (list son-state 'NORTH node))))
-		;repeat for each operator
-		(setf son-states (South8 state)) 
-		(setf son-nodes 
-			(append son-nodes 
-				(mapcar son-states 
-					'(lambda(son-state) (list son-state 'SOUTH node)))))
-		(setf son-states (East8 state))
-		(setf son-nodes 
-			(append son-nodes 
-				(mapcar son-states 
-					'(lambda(son-state) (list son-state 'EAST node)))))
-		(setf son-states (West8 state)) 
-		(setf son-nodes 
-			(append son-nodes 
-				(mapcar son-states 
-					'(lambda(son-state) (list son-state 'WEST node)))))
+		  (son-state nil)
+		  (state (State node)))
+
+		;(print "expanding node")
+		;(print node)
+
+		(setf son-state (North8 state))
+		(if (not (null son-state))
+			(setf son-nodes 
+				(append son-nodes 
+					(list (list son-state 'NORTH node)))))
+
+		(setf son-state (South8 state)) 
+		(if (not (null son-state))
+			(setf son-nodes 
+				(append son-nodes 
+					(list (list son-state 'SOUTH node)))))
+
+		(setf son-state (East8 state))
+		(if (not (null son-state))
+			(setf son-nodes 
+				(append son-nodes 
+					(list (list son-state 'EAST node)))))
+
+		(setf son-state (West8 state)) 
+		(if (not (null son-state))
+			(setf son-nodes 
+				(append son-nodes 
+					(list (list son-state 'WEST node)))))
+
+		;(print-nodes son-nodes "son-nodes")
+
 		;and return son-nodes
 		son-nodes)
-) ;closes defun 
+) ;defun 
+
+(defun print-nodes (nodes title)
+	(print title)
+	(dolist (x nodes) 
+		(print (format NIL "Node: ~a" (state8-to-string (State x)))))
+)
 
 ;; breadth first search
 (defun bfs (s0 sg sons)
@@ -201,10 +185,9 @@
 			(push n closed) 
 			;3.3. if state(N) == Sg, EXIT SUCCESS
 			(if (state-equal (State n) sg) 
-				(print "Great. I found a solution. Here it is:") 
 				(return (trace-solution n)))
 			;4.1. let DAUGHTERS be nodes of all operators applied to N
-			(setf daughters (apply sons n)) 
+			(setf daughters (successor-function n))
 			;4.2. remove previously explored states from DAUGHTERS
 			(setf daughters (DIFF daughters (append open closed))) 
 			;4.3. add DAUGHTERS to end of OPEN, b/c bfs uses a queue
@@ -219,8 +202,6 @@
 	(print "Please tell me the starting position:") 
 	(setf state (read)) 
 	(setf SI state) 
-	(print "Please tell me the goal state you wish to find:") 
-	(setf goal (read)) 
-	(setf SG goal)
-	(bfs SI SG 'successor-function) 
+	(setf SG '((1 2 3) (4 5 6) (7 8 0) (2 2)))
+	(bfs SI SG 'successor-function)
 ) ;end of loop
