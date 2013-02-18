@@ -101,8 +101,14 @@
 	(test-one-match '(a * ?x *) '(a b c d) '(((?x b)) ((?x c)) ((?x d))))
 	(test-one-match '(?x 2 (?x)) '(1 2 (1)) '((?x 1)))
 	(test-one-match '(?x 2 (?x)) '(3 2 (1)) NIL)
-	(test-one-match '(1 (* ?x *)) '(1 (a (b c) d)) '(((?x a)) ((?x (b c))) ((?x d)))))
+	(test-one-match '(1 (* ?x *)) '(1 (a (b c) d)) '(((?x a)) ((?x (b c))) ((?x d))))
+
+	(test-one-match '(((?X (?Y (?Z ((?W))) (?R))))) '(((1 (2 (3 ((4))) (1))))) '((?X 1) (?Y 2) (?Z 3) (?W 4) (?R 1)))
+	(test-one-match '(?A (* ?B *)) '(1 (2 3 4)) '(((?B 2) (?A 1)) ((?B 3) (?A 1)) ((?B 4) (?A 1))))
+	(test-one-match '(?A (* ?A *)) '(3 (2 3 4)) '((?A 3)))
+)
 
 
 ;; run all tests
 (test-match)
+(setf tmp (read))

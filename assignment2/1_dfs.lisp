@@ -154,11 +154,7 @@
 		  (son-state nil)
 		  (state (State node)))
 		;apply all operators to node
-		(setf son-state (North state))
-		(if (not (null son-state))
-			(setf son-nodes 
-				(append son-nodes 
-					(list (list son-state 'NORTH node)))))
+
 		(setf son-state (South state)) 
 		(if (not (null son-state))
 			(setf son-nodes 
@@ -174,14 +170,19 @@
 			(setf son-nodes 
 				(append son-nodes 
 					(list (list son-state 'WEST node)))))
+				(setf son-state (North state))
+		(if (not (null son-state))
+			(setf son-nodes 
+				(append son-nodes 
+					(list (list son-state 'NORTH node)))))
 		;and return son-nodes
 		son-nodes)
 ) ;defun 
 
-;;;;;;;;;;;;; BREADTH FIRST SEARCH ;;;;;;;;;;;;;;;
+;;;;;;;;;;;;; DEPTH FIRST SEARCH ;;;;;;;;;;;;;;;
 
-;; breadth first search
-(defun bfs (s0 sg successors)
+;; depth first search
+(defun dfs (s0 sg successors)
 	(let ((open (list (list s0 nil nil))) ;1. put S0 on OPEN
 		  (closed nil)
 		  (n nil)
@@ -200,8 +201,12 @@
 			(setf daughters (funcall successors n))
 			;4.2. remove previously explored states from DAUGHTERS
 			(setf daughters (Diff daughters (append open closed))) 
-			;4.3. add DAUGHTERS to end of OPEN, b/c bfs uses a queue
-			(setf open (append open daughters)) 
+			;4.3. add DAUGHTERS to front of OPEN, b/c dfs uses a stack
+			(setf open (append daughters open))
+
+			(print-nodes open "open")
+			(setf unused (read))
+
 			;5. loop back to 2
 		) ;loop 
 	) ;let 
@@ -215,5 +220,5 @@
 	(if (equal 'test SI)
 		(setf SI '((1 2 3) (4 0 6) (7 5 8) (1 1))))
 	(setf SG '((1 2 3) (4 5 6) (7 8 0) (2 2)))
-	(bfs SI SG 'Sucessors)
+	(dfs SI SG 'Sucessors)
 ) ;end of loop

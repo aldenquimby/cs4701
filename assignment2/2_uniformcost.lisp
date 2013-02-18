@@ -178,10 +178,10 @@
 		son-nodes)
 ) ;defun 
 
-;;;;;;;;;;;;; BREADTH FIRST SEARCH ;;;;;;;;;;;;;;;
+;;;;;;;;;;;;; UNIFORM COST SEARCH ;;;;;;;;;;;;;;;
 
-;; breadth first search
-(defun bfs (s0 sg successors)
+;; uniform cost search
+(defun ucs (s0 sg successors)
 	(let ((open (list (list s0 nil nil))) ;1. put S0 on OPEN
 		  (closed nil)
 		  (n nil)
@@ -198,11 +198,31 @@
 				(return (Trace-solution n)))
 			;4.1. let DAUGHTERS be nodes of all operators applied to N
 			(setf daughters (funcall successors n))
-			;4.2. remove previously explored states from DAUGHTERS
-			(setf daughters (Diff daughters (append open closed))) 
-			;4.3. add DAUGHTERS to end of OPEN, b/c bfs uses a queue
-			(setf open (append open daughters)) 
-			;5. loop back to 2
+
+			;	foreach (var m in sucessors(n))
+			;	{
+			;		if m is not OPEN or CLOSED
+			;			add m to OPEN
+			;		if m is OPEN
+			;			if g(m) > g(n) + c(n,m)
+			;				kill this node
+			;	}
+
+			(dolist (node daughters)
+				(cond
+					((not (null (find-if #'(lambda (i) (State-equal (State i) (State node))) open)))
+						; in the open list
+
+					)
+					((not (null (find-if #'(lambda (i) (State-equal (State i) (State node))) closed)))
+						; in the closed list
+						; do nothing
+					)
+					(t
+						; not in either open or closed
+						(setf open (append open (list node))))
+				) ;cond
+			) ;dolist
 		) ;loop 
 	) ;let 
 ) ;defun
