@@ -1,8 +1,9 @@
 ;;; Alden Quimby
 ;;; adq2101
 
+
 ;; node accessor functions:
-(defun State (node) (first node)) 
+(defun State (node) (first node)) ; 8 puzzle state: ((row1) (row2) (row3) (r c))
 (defun Operator (node) (second node)) 
 (defun Parent (node) (third node))
 
@@ -23,12 +24,20 @@
 	(print title)
 	(dolist (x nodes) 
 		(print (format NIL "Node: ~a" (State-to-string (State x)))))
-)
+) ;defun
 
-;;;;;;;;;;;;;;; SPECIFIC TO 8 PUZZLE ;;;;;;;;;;;;;;;
+;; compare states by looking at string representation
+(defun State-equal (state1 state2)
+	(equal (State-to-string state1) (State-to-string state2))
+) ;defun
 
-;; state accessor functions:
-(defun Blank (state) (fourth state))
+;; subtract open-and-closed-nodes from new-nodes
+(defun Diff (new existing)
+	(set-difference 
+		new 
+		existing 
+		:test #'(lambda (a b) (State-equal (State a) (State b))))
+) ;defun
 
 ;; swap two states
 (defun Swap (state from-row from-col to-row to-col)
@@ -48,7 +57,6 @@
 ) ;defun
 
 ;; convert 8 puzzle state to string
-;; 8 puzzle state: ((row1) (row2) (row3) (r c))
 (defun State-to-string (state)  
 	(let ((cstate (append (copy-list (first state)) (copy-list (second state)) (copy-list (third state))))
           (returned-string "S"))
@@ -61,25 +69,10 @@
   	) ;let
 ) ;defun
 
-;;;;;;;;;;;; GENERAL TO 8/15 PUZZLE ;;;;;;;;;;;
-
-;; compare states by looking at string representation
-(defun State-equal (state1 state2)
-	(equal (State-to-string state1) (State-to-string state2))
-) ;defun
-
-;; subtract open-and-closed-nodes from new-nodes
-(defun Diff (new existing)
-	(set-difference 
-		new 
-		existing 
-		:test #'(lambda (a b) (State-equal (State a) (State b))))
-) ;defun
-
 ;; move the blank NORTH 
 (defun North (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-row 0) nil)
@@ -96,8 +89,8 @@
 
 ;; move the blank SOUTH
 (defun South (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-row 2) nil)
@@ -114,8 +107,8 @@
 
 ;; move the blank EAST
 (defun East (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-col 2) nil)
@@ -132,8 +125,8 @@
 
 ;; move the blank WEST
 (defun West (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-col 0) nil)
