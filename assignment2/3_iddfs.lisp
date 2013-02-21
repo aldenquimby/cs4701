@@ -1,6 +1,7 @@
 ;;; Alden Quimby
 ;;; adq2101
 
+;;; breadth and depth first search implementation
 
 ;; node accessor functions:
 (defun State (node) (first node)) ; 8 puzzle state: ((row1) (row2) (row3) (r c))
@@ -19,24 +20,24 @@
 				(print (Operator node)))))
 ) ;defun
 
-;; debugger
-(defun Print-nodes (nodes title)
-	(print title)
-	(dolist (x nodes) 
-		(print (format NIL "Node: ~a" (State-to-string (State x)))))
+;; convert 8 puzzle state to string
+(defun State-to-string (state)  
+	(let ((cstate (append (copy-list (first state)) (copy-list (second state)) (copy-list (third state))))
+          (returned-string "S"))
+  		(loop
+		   	(if (null cstate) (return returned-string))
+		   	(setf returned-string
+				(concatenate 'string returned-string (subseq "012345678" (first cstate) (1+ (first cstate)))))
+		   	(setf cstate (rest cstate))
+   		) ;loop
+  	) ;let
 ) ;defun
 
 ;; compare states by looking at string representation
 (defun State-equal (state1 state2)
-	(equal (State-to-string state1) (State-to-string state2))
-) ;defun
-
-;; subtract open-and-closed-nodes from new-nodes
-(defun Diff (new existing)
-	(set-difference 
-		new 
-		existing 
-		:test #'(lambda (a b) (State-equal (State a) (State b))))
+	(equal 
+		(State-to-string state1) 
+		(State-to-string state2))
 ) ;defun
 
 ;; swap two states
@@ -54,19 +55,6 @@
 			(list to-row to-col))
 		;return state
 		state)
-) ;defun
-
-;; convert 8 puzzle state to string
-(defun State-to-string (state)  
-	(let ((cstate (append (copy-list (first state)) (copy-list (second state)) (copy-list (third state))))
-          (returned-string "S"))
-  		(loop
-		   	(if (null cstate) (return returned-string))
-		   	(setf returned-string
-				(concatenate 'string returned-string (subseq "012345678" (first cstate) (1+ (first cstate)))))
-		   	(setf cstate (rest cstate))
-   		) ;loop
-  	) ;let
 ) ;defun
 
 ;; move the blank NORTH 
@@ -142,7 +130,7 @@
 ) ;defun
 
 ;; get successor nodes by applying all operators to node
-(defun Sucessors (node) 
+(defun Successors (node) 
 	(let ((son-nodes nil) 
 		  (son-state nil)
 		  (state (State node)))
@@ -171,42 +159,65 @@
 		son-nodes)
 ) ;defun 
 
-;;;;;;;;;;;;; BREADTH FIRST SEARCH ;;;;;;;;;;;;;;;
+;; depth bounded dfs
+(defun Depth-bounded-dfs (node sg sons depth)
+	(let ((daughters nil))
+		;did we reach the goal state?
+		(if (State-equal (state node) sg) 
+			(return-from Depth-bounded-dfs (Trace-solution node)))
+		;did we reach the bottom of the search space without finding goal?
+		(if (= depth 1)
+			(return-from Depth-bounded-dfs nil))
+		;get child nodes
+   		(setf daughters (funcall sons node)) 
+		(loop
+			;if no daughters, failed
+			(if (null daughters) 
+				(return-from Depth-bounded-dfs nil))
+			;recurse with shallower depth
+ 			(if (Depth-bounded-dfs
+                   (pop daughters)
+                   sg
+                   sons
+                   (- depth 1))
+	 			;found a solution!
+	         	(return-from Depth-bounded-dfs t))
+		) ;loop
+	) ;let
+) ;defun
 
-;; breadth first search
-(defun bfs (s0 sg successors)
-	(let ((open (list (list s0 nil nil))) ;1. put S0 on OPEN
-		  (closed nil)
-		  (n nil)
-		  (daughters nil))
-		(loop 
-			;2. if OPEN is empty, EXIT FAIL
-			(if (null open) (return 'fail)) 
-			;3.1. let N = pop first from OPEN
-			(setf n (pop open)) 
-			;3.2 push N onto CLOSED
-			(push n closed) 
-			;3.3. if state(N) == Sg, EXIT SUCCESS
-			(if (State-equal (State n) sg) 
-				(return (Trace-solution n)))
-			;4.1. let DAUGHTERS be nodes of all operators applied to N
-			(setf daughters (funcall successors n))
-			;4.2. remove previously explored states from DAUGHTERS
-			(setf daughters (Diff daughters (append open closed))) 
-			;4.3. add DAUGHTERS to end of OPEN, b/c bfs uses a queue
-			(setf open (append open daughters)) 
-			;5. loop back to 2
-		) ;loop 
-	) ;let 
+;; iterative deepening dfs
+(defun Iterative-deepening-dfs (s0 sg sons depth increment)
+	(print (format nil "depth: ~a" depth))
+	;try depth bounded dfs at this depth
+	(if (not (Depth-bounded-dfs
+				(list s0 nil nil)
+				sg
+				sons
+				depth))
+		;try again, but go deeper by increment
+		(Iterative-deepening-dfs
+			s0
+			sg
+			sons
+			(+ depth increment)
+			increment))
 ) ;defun
 
 ;; main program
 (loop 
-	(print "Please tell me the starting position:") 
+	;get start state
+	(print "Tell me the start state (0 for default):") 
 	(setf state (read)) 
 	(setf SI state) 
-	(if (equal 'test SI)
+	(if (equal 0 SI)
 		(setf SI '((1 2 3) (4 0 6) (7 5 8) (1 1))))
-	(setf SG '((1 2 3) (4 5 6) (7 8 0) (2 2)))
-	(bfs SI SG 'Sucessors)
-) ;end of loop
+	;get goal state
+	(print "Tell me the goal state (0 for default):") 
+	(setf state (read)) 
+	(setf SG state) 
+	(if (equal 0 SG)
+		(setf SG '((1 2 3) (4 5 6) (7 8 0) (2 2))))
+
+	(Iterative-deepening-dfs SI SG 'Successors 14 2)
+) ;loop

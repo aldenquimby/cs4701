@@ -1,8 +1,10 @@
 ;;; Alden Quimby
 ;;; adq2101
 
+;;; breadth and depth first search implementation
+
 ;; node accessor functions:
-(defun State (node) (first node)) 
+(defun State (node) (first node)) ; 8 puzzle state: ((row1) (row2) (row3) (r c))
 (defun Operator (node) (second node)) 
 (defun Parent (node) (third node))
 
@@ -18,17 +20,33 @@
 				(print (Operator node)))))
 ) ;defun
 
-;; debugger
-(defun Print-nodes (nodes title)
-	(print title)
-	(dolist (x nodes) 
-		(print (format NIL "Node: ~a" (State-to-string (State x)))))
-)
+;; convert 8 puzzle state to string
+(defun State-to-string (state)  
+	(let ((cstate (append (copy-list (first state)) (copy-list (second state)) (copy-list (third state))))
+          (returned-string "S"))
+  		(loop
+		   	(if (null cstate) (return returned-string))
+		   	(setf returned-string
+				(concatenate 'string returned-string (subseq "012345678" (first cstate) (1+ (first cstate)))))
+		   	(setf cstate (rest cstate))
+   		) ;loop
+  	) ;let
+) ;defun
 
-;;;;;;;;;;;;;;; SPECIFIC TO 8 PUZZLE ;;;;;;;;;;;;;;;
+;; compare states by looking at string representation
+(defun State-equal (state1 state2)
+	(equal 
+		(State-to-string state1) 
+		(State-to-string state2))
+) ;defun
 
-;; state accessor functions:
-(defun Blank (state) (fourth state))
+;; subtract open-and-closed-nodes from new-nodes
+(defun Diff (new existing)
+	(set-difference 
+		new 
+		existing 
+		:test #'(lambda (a b) (State-equal (State a) (State b))))
+) ;defun
 
 ;; swap two states
 (defun Swap (state from-row from-col to-row to-col)
@@ -47,39 +65,10 @@
 		state)
 ) ;defun
 
-;; convert 8 puzzle state to string
-;; 8 puzzle state: ((row1) (row2) (row3) (r c))
-(defun State-to-string (state)  
-	(let ((cstate (append (copy-list (first state)) (copy-list (second state)) (copy-list (third state))))
-          (returned-string "S"))
-  		(loop
-		   	(if (null cstate) (return returned-string))
-		   	(setf returned-string
-				(concatenate 'string returned-string (subseq "012345678" (first cstate) (1+ (first cstate)))))
-		   	(setf cstate (rest cstate))
-   		) ;loop
-  	) ;let
-) ;defun
-
-;;;;;;;;;;;; GENERAL TO 8/15 PUZZLE ;;;;;;;;;;;
-
-;; compare states by looking at string representation
-(defun State-equal (state1 state2)
-	(equal (State-to-string state1) (State-to-string state2))
-) ;defun
-
-;; subtract open-and-closed-nodes from new-nodes
-(defun Diff (new existing)
-	(set-difference 
-		new 
-		existing 
-		:test #'(lambda (a b) (State-equal (State a) (State b))))
-) ;defun
-
 ;; move the blank NORTH 
 (defun North (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-row 0) nil)
@@ -96,8 +85,8 @@
 
 ;; move the blank SOUTH
 (defun South (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-row 2) nil)
@@ -114,8 +103,8 @@
 
 ;; move the blank EAST
 (defun East (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-col 2) nil)
@@ -132,8 +121,8 @@
 
 ;; move the blank WEST
 (defun West (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-col 0) nil)
@@ -149,12 +138,16 @@
 ) ;defun
 
 ;; get successor nodes by applying all operators to node
-(defun Sucessors (node) 
+(defun Successors (node) 
 	(let ((son-nodes nil) 
 		  (son-state nil)
 		  (state (State node)))
 		;apply all operators to node
-
+		(setf son-state (North state))
+		(if (not (null son-state))
+			(setf son-nodes 
+				(append son-nodes 
+					(list (list son-state 'NORTH node)))))
 		(setf son-state (South state)) 
 		(if (not (null son-state))
 			(setf son-nodes 
@@ -170,19 +163,12 @@
 			(setf son-nodes 
 				(append son-nodes 
 					(list (list son-state 'WEST node)))))
-				(setf son-state (North state))
-		(if (not (null son-state))
-			(setf son-nodes 
-				(append son-nodes 
-					(list (list son-state 'NORTH node)))))
 		;and return son-nodes
 		son-nodes)
 ) ;defun 
 
-;;;;;;;;;;;;; DEPTH FIRST SEARCH ;;;;;;;;;;;;;;;
-
-;; depth first search
-(defun dfs (s0 sg successors)
+;; BREADTH FIRST SEARCH
+(defun bfs (s0 sg sons)
 	(let ((open (list (list s0 nil nil))) ;1. put S0 on OPEN
 		  (closed nil)
 		  (n nil)
@@ -198,7 +184,34 @@
 			(if (State-equal (State n) sg) 
 				(return (Trace-solution n)))
 			;4.1. let DAUGHTERS be nodes of all operators applied to N
-			(setf daughters (funcall successors n))
+			(setf daughters (funcall sons n))
+			;4.2. remove previously explored states from DAUGHTERS
+			(setf daughters (Diff daughters (append open closed))) 
+			;4.3. add DAUGHTERS to end of OPEN, b/c bfs uses a queue
+			(setf open (append open daughters)) 
+			;5. loop back to 2
+		) ;loop 
+	) ;let 
+) ;defun
+
+;; DEPTH FIRST SEARCH
+(defun dfs (s0 sg sons)
+	(let ((open (list (list s0 nil nil))) ;1. put S0 on OPEN
+		  (closed nil)
+		  (n nil)
+		  (daughters nil))
+		(loop 
+			;2. if OPEN is empty, EXIT FAIL
+			(if (null open) (return 'fail)) 
+			;3.1. let N = pop first from OPEN
+			(setf n (pop open)) 
+			;3.2 push N onto CLOSED
+			(push n closed) 
+			;3.3. if state(N) == Sg, EXIT SUCCESS
+			(if (State-equal (State n) sg) 
+				(return (Trace-solution n)))
+			;4.1. let DAUGHTERS be nodes of all operators applied to N
+			(setf daughters (funcall sons n))
 			;4.2. remove previously explored states from DAUGHTERS
 			(setf daughters (Diff daughters (append open closed))) 
 			;4.3. add DAUGHTERS to front of OPEN, b/c dfs uses a stack
@@ -210,11 +223,28 @@
 
 ;; main program
 (loop 
-	(print "Please tell me the starting position:") 
+	;get start state
+	(print "Tell me the start state (0 for default):") 
 	(setf state (read)) 
 	(setf SI state) 
-	(if (equal 'test SI)
+	(if (equal 0 SI)
 		(setf SI '((1 2 3) (4 0 6) (7 5 8) (1 1))))
-	(setf SG '((1 2 3) (4 5 6) (7 8 0) (2 2)))
-	(dfs SI SG 'Sucessors)
-) ;end of loop
+	;get goal state
+	(print "Tell me the goal state (0 for default):") 
+	(setf state (read)) 
+	(setf SG state) 
+	(if (equal 0 SG)
+		(setf SG '((1 2 3) (4 5 6) (7 8 0) (2 2))))
+	;get search type	
+	(print "Choose a search type:")
+	(print "(1) bfs = breadth first")
+	(print "(2) dfs = depth first")
+	(setf type (read))
+	(cond
+		((equal 1 type)
+			(bfs SI SG 'Successors))
+		((equal 2 type)
+			(dfs SI SG 'Successors))
+		((print "unhandled case"))
+	) ;cond
+) ;loop

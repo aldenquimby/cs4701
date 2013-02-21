@@ -22,13 +22,14 @@
 (defun Print-nodes (nodes title)
 	(print title)
 	(dolist (x nodes) 
-		(print (format NIL "Node: ~a" (State-to-string (State x)))))
+		(Print-fmt "Node: ~a" (State-to-string (State x))))
 )
 
-;;;;;;;;;;;;;;; SPECIFIC TO 8 PUZZLE ;;;;;;;;;;;;;;;
-
-;; state accessor functions:
-(defun Blank (state) (fourth state))
+;; print helper
+(defun Print-fmt fmt val
+	(print 
+		(format NIL fmt val))
+)
 
 ;; swap two states
 (defun Swap (state from-row from-col to-row to-col)
@@ -61,25 +62,17 @@
   	) ;let
 ) ;defun
 
-;;;;;;;;;;;; GENERAL TO 8/15 PUZZLE ;;;;;;;;;;;
-
 ;; compare states by looking at string representation
 (defun State-equal (state1 state2)
-	(equal (State-to-string state1) (State-to-string state2))
-) ;defun
-
-;; subtract open-and-closed-nodes from new-nodes
-(defun Diff (new existing)
-	(set-difference 
-		new 
-		existing 
-		:test #'(lambda (a b) (State-equal (State a) (State b))))
+	(equal 
+		(State-to-string state1) 
+		(State-to-string state2))
 ) ;defun
 
 ;; move the blank NORTH 
 (defun North (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-row 0) nil)
@@ -96,8 +89,8 @@
 
 ;; move the blank SOUTH
 (defun South (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-row 2) nil)
@@ -114,8 +107,8 @@
 
 ;; move the blank EAST
 (defun East (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-col 2) nil)
@@ -132,8 +125,8 @@
 
 ;; move the blank WEST
 (defun West (state)
-	(let ((blank-row (first (Blank state)))
-		  (blank-col (second (Blank state))))
+	(let ((blank-row (first (fourth state)))
+		  (blank-col (second (fourth state))))
 		(cond
 			;make sure we can move
 			((= blank-col 0) nil)
@@ -149,7 +142,7 @@
 ) ;defun
 
 ;; get successor nodes by applying all operators to node
-(defun Sucessors (node) 
+(defun Successors (node) 
 	(let ((son-nodes nil) 
 		  (son-state nil)
 		  (state (State node)))
@@ -178,10 +171,8 @@
 		son-nodes)
 ) ;defun 
 
-;;;;;;;;;;;;; UNIFORM COST SEARCH ;;;;;;;;;;;;;;;
-
-;; uniform cost search
-(defun ucs (s0 sg successors)
+;; UNIFORM COST SEARCH
+(defun ucs (s0 sg sons)
 	(let ((open (list (list s0 nil nil))) ;1. put S0 on OPEN
 		  (closed nil)
 		  (n nil)
@@ -197,7 +188,7 @@
 			(if (State-equal (State n) sg) 
 				(return (Trace-solution n)))
 			;4.1. let DAUGHTERS be nodes of all operators applied to N
-			(setf daughters (funcall successors n))
+			(setf daughters (funcall sons n))
 
 			;	foreach (var m in sucessors(n))
 			;	{
@@ -235,5 +226,5 @@
 	(if (equal 'test SI)
 		(setf SI '((1 2 3) (4 0 6) (7 5 8) (1 1))))
 	(setf SG '((1 2 3) (4 5 6) (7 8 0) (2 2)))
-	(bfs SI SG 'Sucessors)
+	(bfs SI SG 'Successors)
 ) ;end of loop

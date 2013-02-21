@@ -1,0 +1,37 @@
+
+node has:
+	state
+	operator used to get to node from parent
+	pointer to parent node
+
+DFS = proc (node depth Sg) ; depth is limit, so dfs will search ALL NODES above that depth, popping back up every time it hits depth
+	if state(node) == Sg
+		return (trace-solutoin (node)) ; success!, print it out and return value of trace-solution, true
+	if depth == 0
+		return false ; fail, too deep!
+	sons = successor-function(node) ; list of nodes, this is the open list
+	for i=1 to length(sons)
+		if DFS(first(sons), depth - 1, Sg)
+			return ; we've already printed trace-solution, so we don't care here what we're returning, just terminate
+		sons = rest(sons)
+	return false
+
+fixing depth moves search space from b^d to b*d!
+however, this will not find the solution if it is deeper than depth => NOT COMPLETE
+it will find solution if it's not as deep as depth
+
+Iterative-deepening DFS:
+	start   DFS(depth = 1)
+	if fail DFS(depth = 2)
+	if fail DFS(depth = 3)
+	.
+	.
+	.
+	if fail DFS(depth = n) ; true depth, we win!
+
+	complete (always finds solution)
+	optimal (meaning in finds the best solution)
+	optimal space (linear in depth of search)
+	exponential time
+
+**without iterative deepening, dfs is NOT optimal
