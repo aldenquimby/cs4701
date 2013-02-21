@@ -4,7 +4,8 @@
 ;; node accessor functions:
 (defun State (node) (first node)) 
 (defun Operator (node) (second node)) 
-(defun Parent (node) (third node))
+(defun G-hat (node) (third node))
+(defun Parent (node) (fourth node))
 
 ;; trace solution when we hit goal state
 (defun Trace-solution (node) 
@@ -31,23 +32,6 @@
 		(format NIL fmt val))
 )
 
-;; swap two states
-(defun Swap (state from-row from-col to-row to-col)
-	(let ((temp nil))
-	 	;simple swap
- 		(setf temp 
- 			(nth from-col (nth from-row state))) 
-		(setf (nth from-col (nth from-row state))
-			(nth to-col (nth to-row state)))
-		(setf (nth to-col (nth to-row state)) 
-			temp)
-		;update new location of blank
-		(setf (fourth state)
-			(list to-row to-col))
-		;return state
-		state)
-) ;defun
-
 ;; convert 8 puzzle state to string
 ;; 8 puzzle state: ((row1) (row2) (row3) (r c))
 (defun State-to-string (state)  
@@ -69,75 +53,160 @@
 		(State-to-string state2))
 ) ;defun
 
+;; returns sublist starting at node that has state equal to arg state
+(defun Find-state (state nodes)
+	(if (null nodes)
+		nil ;return nil if exhausted
+     (if (State-equal state (State (first nodes)))
+         nodes ;return where we found it
+         (Find-state (rest nodes)))) ;keep looking
+) ;defun
+
+;; optimized state copier, only copies what's necessary
+(defun Copy-state (state copy-first copy-second copy-third)
+	(let ((part1 nil)
+		  (part2 nil)
+		  (part3 nil)
+		  (part4 (fourth state)))
+		; copy necessary components
+		(if copy-first
+			(setf part1 (copy-tree (first state)))
+			(setf part1 (first state)))
+		(if copy-second
+			(setf part2 (copy-tree (second state)))
+			(setf part2 (second state)))
+		(if copy-third
+			(setf part3 (copy-tree (third state)))
+			(setf part3 (third state)))
+		; return copied state
+		(list part1 part2 part3 part4)
+	) ;let
+) ;defun
+
+;; swap two states
+(defun Swap (state from-row from-col to-row to-col)
+	(let ((temp nil))
+	 	;simple swap
+ 		(setf temp 
+ 			(nth from-col (nth from-row state))) 
+		(setf (nth from-col (nth from-row state))
+			(nth to-col (nth to-row state)))
+		(setf (nth to-col (nth to-row state)) 
+			temp)
+		;update new location of blank
+		(setf (fourth state)
+			(list to-row to-col))
+		;return state
+		state)
+) ;defun
+
 ;; move the blank NORTH 
 (defun North (state)
 	(let ((blank-row (first (fourth state)))
-		  (blank-col (second (fourth state))))
-		(cond
-			;make sure we can move
-			((= blank-row 0) nil)
-			;subtract one from blank-row
-			((Swap
-				(copy-tree state)
-				blank-row
-				blank-col
-				(- blank-row 1)
-				blank-col))
-		) ;cond
+		  (blank-col (second (fourth state)))
+		  (copied-state nil))
+		;make sure we can move
+		(if (= blank-row 0)
+			(return-from North nil))
+		;only copy parts we need to
+		(if (= blank-row 2)
+			(setf copied-state 
+				(Copy-state state nil t t))
+			(setf copied-state 
+				(Copy-state state t t nil))
+		) ;if
+		;subtract one from blank-row
+		(Swap
+			copied-state
+			blank-row
+			blank-col
+			(- blank-row 1)
+			blank-col)
 	) ;let
 ) ;defun
 
 ;; move the blank SOUTH
 (defun South (state)
 	(let ((blank-row (first (fourth state)))
-		  (blank-col (second (fourth state))))
-		(cond
-			;make sure we can move
-			((= blank-row 2) nil)
-			;add one to blank-row
-			((Swap
-				(copy-tree state)
-				blank-row
-				blank-col
-				(+ blank-row 1)
-				blank-col))
-		) ;cond
+		  (blank-col (second (fourth state)))
+		  (copied-state nil))
+		;make sure we can move
+		(if (= blank-row 2)
+			(return-from South nil))
+		;only copy parts we need to
+		(if (= blank-row 0)
+			(setf copied-state 
+				(Copy-state state t t nil))
+			(setf copied-state 
+				(Copy-state state nil t t))
+		) ;if
+		;add one from blank-row
+		(Swap
+			copied-state
+			blank-row
+			blank-col
+			(+ blank-row 1)
+			blank-col)
 	) ;let
 ) ;defun
 
 ;; move the blank EAST
 (defun East (state)
 	(let ((blank-row (first (fourth state)))
-		  (blank-col (second (fourth state))))
+		  (blank-col (second (fourth state)))
+		  (copied-state nil))
+		;make sure we can move
+		(if (= blank-col 2)
+			(return-from East nil))
+		;only copy parts we need to
 		(cond
-			;make sure we can move
-			((= blank-col 2) nil)
-			;add one to blank-col
-			((Swap
-				(copy-tree state)
-				blank-row
-				blank-col
-				blank-row
-				(+ blank-col 1)))
+			((= blank-row 0)
+				(setf copied-state 
+					(Copy-state state t nil nil)))
+			((= blank-row 1)
+				(setf copied-state 
+					(Copy-state state nil t nil)))
+			((= blank-row 2)
+				(setf copied-state 
+					(Copy-state state nil nil t)))
 		) ;cond
+		;add one from blank-row
+		(Swap
+			copied-state
+			blank-row
+			blank-col
+			blank-row
+			(+ blank-col 1))
 	) ;let
 ) ;defun
 
 ;; move the blank WEST
 (defun West (state)
 	(let ((blank-row (first (fourth state)))
-		  (blank-col (second (fourth state))))
+		  (blank-col (second (fourth state)))
+		  (copied-state nil))
+		;make sure we can move
+		(if (= blank-col 0)
+			(return-from West nil))
+		;only copy parts we need to
 		(cond
-			;make sure we can move
-			((= blank-col 0) nil)
-			;subtract one from blank-col
-			((Swap
-				(copy-tree state)
-				blank-row
-				blank-col
-				blank-row
-				(- blank-col 1)))
+			((= blank-row 0)
+				(setf copied-state 
+					(Copy-state state t nil nil)))
+			((= blank-row 1)
+				(setf copied-state 
+					(Copy-state state nil t nil)))
+			((= blank-row 2)
+				(setf copied-state 
+					(Copy-state state nil nil t)))
 		) ;cond
+		;add one from blank-row
+		(Swap
+			copied-state
+			blank-row
+			blank-col
+			blank-row
+			(- blank-col 1))
 	) ;let
 ) ;defun
 
@@ -173,7 +242,7 @@
 
 ;; UNIFORM COST SEARCH
 (defun ucs (s0 sg sons)
-	(let ((open (list (list s0 nil nil))) ;1. put S0 on OPEN
+	(let ((open (list (list s0 nil 0 nil))) ;1. put S0 on OPEN
 		  (closed nil)
 		  (n nil)
 		  (daughters nil))
@@ -190,30 +259,29 @@
 			;4.1. let DAUGHTERS be nodes of all operators applied to N
 			(setf daughters (funcall sons n))
 
-			;	foreach (var m in sucessors(n))
-			;	{
-			;		if m is not OPEN or CLOSED
-			;			add m to OPEN
-			;		if m is OPEN
-			;			if g(m) > g(n) + c(n,m)
-			;				kill this node
-			;	}
-
-			(dolist (node daughters)
-				(cond
-					((not (null (find-if #'(lambda (i) (State-equal (State i) (State node))) open)))
-						; in the open list
-
-					)
-					((not (null (find-if #'(lambda (i) (State-equal (State i) (State node))) closed)))
-						; in the closed list
-						; do nothing
-					)
-					(t
-						; not in either open or closed
-						(setf open (append open (list node))))
-				) ;cond
+			;4.2. 
+			(dolist (m daughters)
+				(let ((found-closed-m (Find-state (State m) closed))
+					  (found-open-m (Find-state (State m) open)))
+					(cond
+						; if in closed list, do nothing
+						((not (null found-closed-m)))
+						; if in open list, compare g-hat
+						((not (null found-open-m))
+							; if new child's g-hat is less than previous
+							; trash old child, destructively replace with new child
+							(if (< (g-hat m) (g-hat (first found-open-m)))
+								(setf (first found-open-m) m)))
+						; if not in open or closed, add to open
+						((push m open))
+					) ;cond
+				) ;let
 			) ;dolist
+
+			; sort open list form min to max g-hat
+			(setf open
+				(sort open 
+					#'(lambda(node1 node2) (< (G-hat node1) (G-hat node2)))))
 		) ;loop 
 	) ;let 
 ) ;defun

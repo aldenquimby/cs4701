@@ -1,7 +1,7 @@
 ;;; Alden Quimby
 ;;; adq2101
 
-;;; breadth and depth first search implementation
+;;; iterative deepening depth first search implementation
 
 ;; node accessor functions:
 (defun State (node) (first node)) ; 8 puzzle state: ((row1) (row2) (row3) (r c))
