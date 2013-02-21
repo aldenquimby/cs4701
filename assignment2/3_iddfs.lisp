@@ -208,16 +208,17 @@
 (loop 
 	;get start state
 	(print "Tell me the start state (0 for default):") 
-	(setf state (read)) 
-	(setf SI state) 
+	(setf SI (read)) 
 	(if (equal 0 SI)
 		(setf SI '((1 2 3) (4 0 6) (7 5 8) (1 1))))
 	;get goal state
 	(print "Tell me the goal state (0 for default):") 
-	(setf state (read)) 
-	(setf SG state) 
+	(setf SG (read)) 
 	(if (equal 0 SG)
 		(setf SG '((1 2 3) (4 5 6) (7 8 0) (2 2))))
-
-	(Iterative-deepening-dfs SI SG 'Successors 14 2)
+	(print "Tell me the initial depth limit:") 
+	(setf depth (read)) 
+	(print "Tell me the depth limit increment:") 
+	(setf increment (read)) 
+	(Iterative-deepening-dfs SI SG 'Successors depth increment)
 ) ;loop

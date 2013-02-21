@@ -5,7 +5,8 @@
 (defun State (node) (first node)) 
 (defun Operator (node) (second node)) 
 (defun G-hat (node) (third node))
-(defun Parent (node) (fourth node))
+(defun H-hat (node) (fourth node))
+(defun Parent (node) (fifth node))
 
 ;; trace solution when we hit goal state
 (defun Trace-solution (node) 
