@@ -8,6 +8,9 @@
 (defun H-hat (node) (fourth node))
 (defun Parent (node) (fifth node))
 
+;; node helper functions:
+(defun F-hat (node) (+ (G-hat node) (H-hat node)))
+
 ;; trace solution when we hit goal state
 (defun Trace-solution (node) 
 	(cond 
@@ -197,22 +200,69 @@
 	) ;let
 ) ;defun
 
-;; cost to get from state1 to state2 
-(defun Cost (state1 state2)
+;; cost between two states 
+(defun Cost (from-state to-state)
 	; just do breadth first search for now
 	1
 ) ;defun
 
-(defun Create-node (state operator parent)
+;; manhattan distance between two points
+(defun Manhattan-distance (pt1 pt2)
+	(+
+		(abs (- (first pt1) (first pt2)))
+		(abs (- (second pt1) (second pt2))))
+) ;defun
+
+;; heuristic described in class: sum of manhattan distances off
+(defun Manhattan-distance-heuristic (state goal)
+	(let ((cur nil)
+		  (sum 0)
+		  (correct-place nil)
+		  (distance-off 0)
+		  (goal-hash (make-hash-table)))
+
+		; hash location of each item in goal state
+		(loop for row-num in '(0 1 2) do
+			(loop for col-num in '(0 1 2) do
+				(setf cur (nth col-num (nth row-num goal)))
+				(setf (gethash cur goal-hash) (list row-num col-num))
+			) ;loop
+		) ;loop
+
+		; sum the manhattan distances off from goal state
+		(loop for row-num in '(0 1 2) do
+			(loop for col-num in '(0 1 2) do
+				(setf cur (nth col-num (nth row-num state)))
+				(setf correct-place (gethash cur goal-hash))
+				(setf distance-off (Manhattan-distance correct-place (list row-num col-num)))
+				(setf sum (+ sum distance-off))
+			) ;loop
+		) ;loop
+
+		; return sum
+		sum
+
+	) ;let
+) ;defun
+
+;; estimated cost from state to goal
+(defun My-heuristic (state goal)
+	; TODO: do it!
+	(Manhattan-distance-heuristic state goal)
+) ;defun
+
+;; creates new node, setting appropriate g-hat and h-hat
+(defun Create-node (state operator parent goal)
 	(list 
 		state 
 		operator
 		(+ (G-hat parent) (Cost (State parent) state))
+		(My-heuristic state goal)
 		parent)
 ) ;defun
 
 ;; get successor nodes by applying all operators to node
-(defun Successors (node) 
+(defun Successors (node goal) 
 	(let ((son-nodes nil) 
 		  (son-state nil)
 		  (state (State node)))
@@ -221,42 +271,50 @@
 		(if (not (null son-state))
 			(setf son-nodes 
 				(append son-nodes 
-					(list (Create-node son-state 'NORTH node)))))
+					(list (Create-node son-state 'NORTH node goal)))))
 		(setf son-state (South state)) 
 		(if (not (null son-state))
 			(setf son-nodes 
 				(append son-nodes 
-					(list (Create-node son-state 'SOUTH node)))))
+					(list (Create-node son-state 'SOUTH node goal)))))
 		(setf son-state (East state))
 		(if (not (null son-state))
 			(setf son-nodes 
 				(append son-nodes 
-					(list (Create-node son-state 'EAST node)))))
+					(list (Create-node son-state 'EAST node goal)))))
 		(setf son-state (West state)) 
 		(if (not (null son-state))
 			(setf son-nodes 
 				(append son-nodes 
-					(list (Create-node son-state 'WEST node)))))
+					(list (Create-node son-state 'WEST node goal)))))
 		;and return son-nodes
 		son-nodes)
 ) ;defun 
 
-;; uniform cost sort for generic search
-(defun ucs-open-sort-func (node1 node2)
+;; astar sorts open list by min F-hat
+(defun astar-open-sort-func (node1 node2)
 	(< 
-		(G-hat node1) 
-		(G-hat node2))
+		(F-hat node1) 
+		(F-hat node2))
 ) ;defun
 
-;; UNIFORM COST SEARCH
-(defun ucs (s0 sg sons)
-	(let ((open (list (list s0 nil 0 nil))) ;1. put S0 on OPEN
+;; A* SEARCH
+(defun astar-search (s0 sg sons)
+	(generic-search s0 sg sons 
+		'astar-open-sort-func)
+) ;defun
+
+;; generic search
+(defun generic-search (s0 sg sons open-sort-func)
+	(let ((open (list (list s0 nil 0 (My-heuristic s0 sg) nil))) ;1. put S0 on OPEN
 		  (closed nil)
 		  (n nil)
 		  (daughters nil))
 		(loop 
 			;2. if OPEN is empty, EXIT FAIL
 			(if (null open) (return 'fail)) 
+			;3.0. sort open list
+			(setf open (sort open 'astar-open-sort-func))
 			;3.1. let N = pop first from OPEN
 			(setf n (pop open)) 
 			;3.2 push N onto CLOSED
@@ -264,28 +322,30 @@
 			;3.3. if state(N) == Sg, EXIT SUCCESS
 			(if (State-equal (State n) sg) 
 				(return (Trace-solution n)))
-			;4.1. let DAUGHTERS be nodes of all operators applied to N
-			(setf daughters (funcall sons n))
-			;4.2. 
+			;4.0. loop through all successors of N
+			(setf daughters (funcall sons n sg))
 			(dolist (m daughters)
 				(let ((found-closed-m (Find-state (State m) closed))
 					  (found-open-m (Find-state (State m) open)))
 					(cond
-						; if in closed list, do nothing
-						((not (null found-closed-m)))
-						; if in open list, compare g-hat
+						; 4.1. if in open list
 						((not (null found-open-m))
-							; if new child's g-hat is less than previous
-							; trash old child, destructively replace with new child
-							(if (< (G-hat m) (G-hat (first found-open-m)))
+							; reset g-hat and parent of m on open if new m is better
+							(when (< (G-hat m) (G-hat (first found-open-m)))
 								(setf (first found-open-m) m)))
-						; else not in open or closed, add to open
+						; 4.2. if in closed list
+						((not (null found-closed-m))
+							(when (< (G-hat m) (G-hat (first found-closed-m)))
+								; put new m on open
+								(push m open)
+								; remove old m from closed
+								(setf closed 
+									(remove-if #'(lambda (closed-node) (equal closed-node (first found-closed-m))) closed))))
+						; 4.3. else not on open or closed
 						((push m open))
 					) ;cond
 				) ;let
 			) ;dolist
-			; sort open list
-			(setf open (sort open 'ucs-open-sort-func))
 		) ;loop 
 	) ;let 
 ) ;defun
@@ -305,5 +365,5 @@
 	(if (equal 0 SG)
 		(setf SG '((1 2 3) (4 5 6) (7 8 0) (2 2))))
 	; do search
-	(ucs SI SG 'Successors)
+	(astar-search SI SG 'Successors)
 ) ;loop
