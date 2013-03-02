@@ -1,41 +1,20 @@
-﻿using System.Collections.Generic;
-
-namespace Search
+﻿namespace Search
 {
     public interface IHeuristic
     {
-        int Evaluate(StateBase state, StateBase goalState);
+        int Evaluate(StateBase state, StateBase goal);
         string Name { get; }
     }
 
-    public class HeuristicCache
+    public abstract class HeurisitcBase<T> : IHeuristic where T : StateBase
     {
-        private readonly IDictionary<StateBase, int> _cache;
-        private readonly StateBase _goal;
-        private readonly IHeuristic _heuristic;
-
-        public HeuristicCache(StateBase goal, IHeuristic heuristic)
+        public int Evaluate(StateBase state, StateBase goal)
         {
-            _goal = goal;
-            _heuristic = heuristic;
-            _cache = new Dictionary<StateBase, int>();
+            return Evaluate(state as T, goal as T);
         }
 
-        public int Evaluate(StateBase state)
-        {
-            if (_heuristic == null || _goal == null || state == null)
-            {
-                return 0;
-            }
+        public abstract int Evaluate(T state, T goal);
 
-            if (_cache.ContainsKey(state))
-            {
-                return _cache[state];
-            }
-
-            var result = _heuristic.Evaluate(state, _goal);
-            _cache[state] = result;
-            return result;
-        }
+        public abstract string Name { get; }
     }
 }

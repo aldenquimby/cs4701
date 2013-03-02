@@ -1,27 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Search;
 
 namespace FifteenPuzzle
 {
-
-
-    public class ManhattanDistanceHeuristic : IHeuristic
+    public class ManhattanDistanceHeuristic : HeurisitcBase<PuzzleState>
     {
-        public string Name { get { return "Manhattan Distance"; } }
+        public override string Name { get { return "Manhattan"; } }
 
-        public int Evaluate(StateBase state, StateBase goalState)
+        public override int Evaluate(PuzzleState state, PuzzleState goal)
         {
-            var start = (PuzzleState)state;
-            var goal = (PuzzleState)goalState;
-
             var manhattanDistanceOff = 0;
 
-            for (byte i = 0; i < start.Board.Length; i++)
+            for (byte i = 0; i < 4; i++)
             {
-                for (byte j = 0; j < start.Board.LongLength; j++)
+                for (byte j = 0; j < 4; j++)
                 {
-                    var val = start.Board[i, j];
+                    var val = state.Board[i, j];
 
                     if (val == 0)
                     {
@@ -37,25 +33,22 @@ namespace FifteenPuzzle
         }
     }
 
-    public class MyHeuristic : IHeuristic
+    public class MyHeuristic : HeurisitcBase<PuzzleState>
     {
-        public string Name { get { return "My Heuristic, Linear Conflicts"; } }
-        
-        public int Evaluate(StateBase state, StateBase goalState)
-        {
-            var start = (PuzzleState)state;
-            var goal = (PuzzleState)goalState;
+        public override string Name { get { return "MyHeuristic"; } }
 
+        public override int Evaluate(PuzzleState state, PuzzleState goal)
+        {
             var manhattanDistanceOff = 0;
 
-            var possibleRowConflicts = new Dictionary<byte, Tuple<byte, byte>>();
-            var possibleColConflicts = new Dictionary<byte, Tuple<byte, byte>>();
+            var possibleRowConflicts = new Dictionary<byte, List<Tuple<byte, byte>>>();
+            var possibleColConflicts = new Dictionary<byte, List<Tuple<byte, byte>>>();
 
-            for (byte i = 0; i < start.Board.Length; i++)
+            for (byte i = 0; i < 4; i++)
             {
-                for (byte j = 0; j < start.Board.LongLength; j++)
+                for (byte j = 0; j < 4; j++)
                 {
-                    var val = start.Board[i, j];
+                    var val = state.Board[i, j];
 
                     if (val == 0)
                     {
@@ -71,22 +64,38 @@ namespace FifteenPuzzle
                     {
                         if (j != correctPlace.Col) // and wrong column?
                         {
-                            possibleRowConflicts.Add(i, Tuple.Create(j, correctPlace.Col));
+                            if (!possibleRowConflicts.ContainsKey(i))
+                            {
+                                possibleRowConflicts[i] = new List<Tuple<byte, byte>>();
+                            }
+                            possibleRowConflicts[i].Add(Tuple.Create(j, correctPlace.Col));
                         }
                     }
                     else if (j == correctPlace.Col) // in correct col and wrong row?
                     {
-                        possibleColConflicts.Add(j, Tuple.Create(i, correctPlace.Row));
+                        if (!possibleColConflicts.ContainsKey(j))
+                        {
+                            possibleRowConflicts[j] = new List<Tuple<byte, byte>>();
+                        }
+                        possibleRowConflicts[j].Add(Tuple.Create(i, correctPlace.Row));
                     }
                 }
             }
 
-            foreach (var kvp in possibleRowConflicts)
-            {
+            var linearConflicts = 0;
 
+            foreach (var possibleConflicts in possibleRowConflicts.Values.Concat(possibleColConflicts.Values))
+            {
+                var conflict = possibleConflicts.First();
+                possibleConflicts.RemoveAt(0);
+
+                linearConflicts += possibleConflicts
+                    .Where(other => (other.Item1 > conflict.Item1 && other.Item2 < conflict.Item2) || 
+                                    (other.Item1 < conflict.Item1 && other.Item2 > conflict.Item2))
+                    .Sum(x => 2);
             }
 
-            return manhattanDistanceOff;
+            return manhattanDistanceOff + linearConflicts;
         }
     }
 }

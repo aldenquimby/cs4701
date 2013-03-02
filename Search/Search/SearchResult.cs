@@ -13,7 +13,7 @@ namespace Search
         public string AlgorithmName { get; set; }
         public string HeuristicName { get; set; }
 
-        public string PrintResults()
+        public string Print()
         {
             var name = AlgorithmName + (HeuristicName == null ? ":" : " (" + HeuristicName + "):");
 
@@ -21,7 +21,10 @@ namespace Search
             var node = Solution;
             while (node != null)
             {
-                listOfMoves.Push(node.Operator);
+                if (node.Operator != null)
+                {
+                    listOfMoves.Push(node.Operator);
+                }
                 node = node.Parent;
             }
 
@@ -30,7 +33,7 @@ namespace Search
             var solution = string.Format("((({0}) {1}) {2} {3} {4} {5})", listOfMovesString, listOfMoves.Count,
                                          NodesGenerated, NodesPrevGenerated, NodesOnOpenList, NodesOnClosedList);
 
-            return string.Format("{0}{1}{2}", name, Environment.NewLine, solution);
+            return string.Format("{0}{1}{2}{1}", name, Environment.NewLine, solution);
         }
     }
 }

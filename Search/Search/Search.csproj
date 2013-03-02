@@ -41,6 +41,7 @@
     <Compile Include="GenericSearch.cs" />
     <Compile Include="HeapKey.cs" />
     <Compile Include="HeuristicBase.cs" />
+    <Compile Include="HeuristicCache.cs" />
     <Compile Include="SearchList.cs" />
     <Compile Include="SearchResult.cs" />
     <Compile Include="StateBase.cs" />

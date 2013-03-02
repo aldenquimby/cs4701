@@ -26,7 +26,7 @@ namespace Search
 
         public void Push(SearchNode node)
         {
-            if (_listByState.ContainsKey(node.State))
+            if (!_listByState.ContainsKey(node.State))
             {
                 _listByState[node.State] = new List<SearchNode>();
             }
@@ -86,13 +86,11 @@ namespace Search
 
         public void Replace(SearchNode inOpenList, SearchNode newNode)
         {
-            var stateKey = inOpenList.State;
-            _stateHash[stateKey].Remove(inOpenList);
-            _stateHash[stateKey].Add(newNode);
+            _stateHash[inOpenList.State].Remove(inOpenList);
+            _stateHash[newNode.State].Add(newNode);
 
-            var heapKey = new HeapKey(inOpenList, CompareNodes);
-            _heap[heapKey].Remove(inOpenList);
-            _heap[heapKey].Add(newNode);
+            _heap[new HeapKey(inOpenList, CompareNodes)].Remove(inOpenList);
+            _heap[new HeapKey(newNode, CompareNodes)].Add(newNode);
         }
 
         public SearchNode Pop()
@@ -124,6 +122,8 @@ namespace Search
             return node;
         }
     }
+
+    #region specific open lists
 
     public class AStarOpenList : OpenListBase
     {
@@ -160,7 +160,42 @@ namespace Search
 
         public override string AlgorithmName
         {
-            get { return "Uniform Cost"; }
+            get { return "UCS"; }
         }
     }
+
+    public class BreadthFirstSearchOpenList : OpenListBase
+    {
+        public override Func<SearchNode, SearchNode, int> CompareNodes
+        {
+            get { return (node1, node2) => node1.Depth.CompareTo(node2.Depth); }
+        }
+
+        public override string AlgorithmName
+        {
+            get { return "BFS"; }
+        }
+    }
+
+    public class DepthFirstSearchOpenList : OpenListBase
+    {
+        private readonly string _name;
+
+        public DepthFirstSearchOpenList(string name)
+        {
+            _name = name;
+        }
+
+        public override Func<SearchNode, SearchNode, int> CompareNodes
+        {
+            get { return (node1, node2) => (-node1.Depth).CompareTo(-node2.Depth); }
+        }
+
+        public override string AlgorithmName
+        {
+            get { return _name; }
+        }
+    }
+
+    #endregion
 }

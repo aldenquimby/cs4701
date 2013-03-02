@@ -191,13 +191,28 @@ namespace FifteenPuzzle
 
         public override IDictionary<string, StateBase> Successors()
         {
-            return new Dictionary<string, StateBase>
-                {
-                    {"N", North()},
-                    {"S", South()},
-                    {"E", East()},
-                    {"W", West()},
-                };
+            var dict = new Dictionary<string, StateBase>();
+            var n = North();
+            var s = South();
+            var e = East();
+            var w = West();
+            if (n != null)
+            {
+                dict["N"] = n;
+            }
+            if (s != null)
+            {
+                dict["S"] = s;
+            }
+            if (e != null)
+            {
+                dict["E"] = e;
+            }
+            if (w != null)
+            {
+                dict["W"] = w;
+            }
+            return dict;
         }
     }
 }
