@@ -51,19 +51,19 @@ namespace FifteenPuzzle
 
                 CostFunc cost = (fromState, toState) => 1;
 
-                var searcher = new GenericSearch(initialState, goalState);
+                var searcher = new Searcher(initialState, goalState);
 
                 // do each search on a separate thread to speed things up
                 var searchThreads = new List<Thread>
                 {
-                    new Thread(() => Console.WriteLine(searcher.DepthFirstSearch(depthLimit).Print())),
-                    new Thread(() => Console.WriteLine(searcher.IterativeDeepeningDfs().Print())),
-                    new Thread(() => Console.WriteLine(searcher.BreadthFirstSearch().Print())),
-                    new Thread(() => Console.WriteLine(searcher.UniformCostSearch(cost).Print())),
-                    new Thread(() => Console.WriteLine(searcher.GreedySearch(cost, new ManhattanDistanceHeuristic()).Print())),
-                    new Thread(() => Console.WriteLine(searcher.AStarSearch(cost, new ManhattanDistanceHeuristic()).Print())),
-                    new Thread(() => Console.WriteLine(searcher.AStarSearch(cost, new MyHeuristic()).Print())),
-                    new Thread(() => Console.WriteLine(searcher.GreedySearch(cost, new MyHeuristic()).Print())),
+                    new Thread(() => Console.WriteLine(searcher.DepthFirstSearch(depthLimit).ToString())),
+                    new Thread(() => Console.WriteLine(searcher.IterativeDeepeningDfs().ToString())),
+                    new Thread(() => Console.WriteLine(searcher.BreadthFirstSearch().ToString())),
+                    new Thread(() => Console.WriteLine(searcher.UniformCostSearch(cost).ToString())),
+                    new Thread(() => Console.WriteLine(searcher.GreedySearch(cost, new ManhattanDistanceHeuristic()).ToString())),
+                    new Thread(() => Console.WriteLine(searcher.AStarSearch(cost, new ManhattanDistanceHeuristic()).ToString())),
+                    new Thread(() => Console.WriteLine(searcher.AStarSearch(cost, new MyHeuristic()).ToString())),
+                    new Thread(() => Console.WriteLine(searcher.GreedySearch(cost, new MyHeuristic()).ToString())),
                 };
 
                 // start all searches

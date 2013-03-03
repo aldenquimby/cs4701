@@ -38,15 +38,12 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GenericSearch.cs" />
-    <Compile Include="HeapKey.cs" />
-    <Compile Include="HeuristicBase.cs" />
-    <Compile Include="HeuristicCache.cs" />
-    <Compile Include="SearchList.cs" />
-    <Compile Include="SearchResult.cs" />
-    <Compile Include="StateBase.cs" />
+    <Compile Include="Searcher.cs" />
+    <Compile Include="Heuristic.cs" />
+    <Compile Include="OpenList.cs" />
+    <Compile Include="ClosedList.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SearchNode.cs" />
+    <Compile Include="SearchModels.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

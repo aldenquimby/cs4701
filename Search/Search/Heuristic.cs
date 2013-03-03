@@ -2,6 +2,34 @@
 
 namespace Search
 {
+    /// <summary>
+    /// Generic heuristic evaluator interface
+    /// </summary>
+    public interface IHeuristic
+    {
+        int Evaluate(StateBase state, StateBase goal);
+        string Name { get; }
+    }
+
+    /// <summary>
+    /// Wrapper for heuristic interface to make implementation cleaner
+    /// </summary>
+    public abstract class HeurisitcBase<T> : IHeuristic where T : StateBase
+    {
+        public int Evaluate(StateBase state, StateBase goal)
+        {
+            return Evaluate(state as T, goal as T);
+        }
+
+        public abstract int Evaluate(T state, T goal);
+
+        public abstract string Name { get; }
+    }
+
+    /// <summary>
+    /// Cache heuristic calculations for specific goal state and heuristic
+    /// so that we don't evalaute heuristic on same state multiple times
+    /// </summary>
     public class HeuristicCache
     {
         private readonly IDictionary<StateBase, int> _cache;
