@@ -36,7 +36,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Heuristics.cs" />
-    <Compile Include="MathUtil.cs" />
     <Compile Include="PuzzleState.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
