@@ -21,19 +21,43 @@ namespace Isolation
             return input;
         }
 
-        private static void MyMove(Board b)
+        private static void MyMove(Board board)
         {
             MoveTimer.I.StartTimer();
 
-            byte row = 5;
-            byte col = 5;
+            var myMove = new BoardSpace(5, 5);
 
-            var move = string.Format("({0},{1})", row, col);
+            board.Move(myMove);
+            
+            var move = string.Format("({0} {1})", myMove.Row, myMove.Col);
+            
+            Console.WriteLine("My move:");
             Console.WriteLine(move);
         }
 
-        private static void OpponentMove()
+        private static void OpponentMove(Board board)
         {
+            Console.WriteLine("Enter opponent move (<row> <col>):");
+            var input = Console.ReadLine() ?? "";
+
+            while (true)
+            {
+                try
+                {
+                    var parts = input.TrimStart('(').TrimEnd(')').Split(' ');
+                    var row = byte.Parse(parts[0]);
+                    var col = byte.Parse(parts[1]);
+                    
+                    var move = new BoardSpace(row, col);
+                    board.Move(move);
+
+                    return;
+                }
+                catch
+                {
+                    Console.WriteLine("Please enter a valid move!");
+                }
+            }
         }
 
         public static void Main(string[] args)
@@ -44,11 +68,19 @@ namespace Isolation
 
             if (isFirst)
             {
-                MyMove(board);
+                while (!board.IsGameOver())
+                {
+                    MyMove(board);
+                    OpponentMove(board);
+                }
             }
             else
             {
-                OpponentMove();
+                while (!board.IsGameOver())
+                {
+                    OpponentMove(board);
+                    MyMove(board);
+                }                
             }
         }
 
@@ -65,7 +97,7 @@ namespace Isolation
         };
     }
 
-    public enum BoardSpace : byte
+    public enum BoardSpaceValue : byte
     {
         Empty = 0,
         Filled = 1,
@@ -73,41 +105,56 @@ namespace Isolation
         PlayerO = 3,
     }
 
+    public struct BoardSpace
+    {
+        public BoardSpace(byte row, byte col) : this()
+        {
+            Row = row;
+            Col = col;
+        }
+
+        public byte Row { get; private set; }
+        public byte Col { get; private set; }
+    }
+
     public class Board
     {
-        private BoardSpace[,] _board;
+        private BoardSpaceValue[,] _board;
 
-        private char GetCharFromSpace(BoardSpace space)
+        public BoardSpace Xposition { get; private set; }
+        public BoardSpace Oposition { get; private set; }
+
+        private char GetCharFromSpace(BoardSpaceValue spaceValue)
         {
-            switch (space)
+            switch (spaceValue)
             {
-                case BoardSpace.Empty:
+                case BoardSpaceValue.Empty:
                     return '-';
-                case BoardSpace.Filled:
+                case BoardSpaceValue.Filled:
                     return '*';
-                case BoardSpace.PlayerO:
+                case BoardSpaceValue.PlayerO:
                     return 'o';
-                case BoardSpace.PlayerX:
+                case BoardSpaceValue.PlayerX:
                     return 'x';
                 default:
                     throw new Exception("Unhandled board space.");
             }
         }
 
-        private BoardSpace GetSpaceFromChar(char c)
+        private BoardSpaceValue GetSpaceFromChar(char c)
         {
             switch (c)
             {
                 case '*':
-                    return BoardSpace.Filled;
+                    return BoardSpaceValue.Filled;
                 case '-':
-                    return BoardSpace.Empty;
+                    return BoardSpaceValue.Empty;
                 case 'o':
                 case 'O':
-                    return BoardSpace.PlayerO;
+                    return BoardSpaceValue.PlayerO;
                 case 'x':
                 case 'X':
-                    return BoardSpace.PlayerX;
+                    return BoardSpaceValue.PlayerX;
                 default:
                     throw new ArgumentException("Invalid board space.");
             }
@@ -115,14 +162,14 @@ namespace Isolation
 
         public Board(IList<string> boardRows)
         {
-            _board = new BoardSpace[8,8];
+            _board = new BoardSpaceValue[8,8];
 
             if (boardRows.Count != 8)
             {
                 throw new ArgumentException("Invalid board.");
             }
 
-            for (var i = 0; i < 8; i++)
+            for (byte i = 0; i < 8; i++)
             {
                 var row = boardRows[i];
 
@@ -131,14 +178,32 @@ namespace Isolation
                     throw new ArgumentException("Invalid board.");
                 }
 
-                for (var j = 0; j < 8; j++)
+                for (byte j = 0; j < 8; j++)
                 {
-                    _board[i, j] = GetSpaceFromChar(row[j]);
+                    var space = GetSpaceFromChar(row[j]);
+                    _board[i, j] = space;
+
+                    if (space == BoardSpaceValue.PlayerX)
+                    {
+                        Xposition = new BoardSpace(i, j);
+                    }
+                    if (space == BoardSpaceValue.PlayerO)
+                    {
+                        Oposition = new BoardSpace(i, j);
+                    }
                 }
             }
         }
 
+        public bool IsGameOver()
+        {
+            return false;
+        }
 
+        public void Move(BoardSpace move)
+        {
+            
+        }
 
         public override string ToString()
         {
@@ -154,5 +219,78 @@ namespace Isolation
             }
             return builder.ToString();
         }
+
+        public List<BoardSpace> GetMovesForX()
+        {
+            var moves = new List<BoardSpace>();
+
+            #region horizontal moves
+
+            for (var i = (byte)(Xposition.Row + 1); i < 8; i++)
+            {
+                if (_board[i, Xposition.Col] == BoardSpaceValue.Empty)
+                {
+                    moves.Add(new BoardSpace(i, Xposition.Col));
+                }
+                else { break; }
+            }
+            
+            for (var i = (byte)(Xposition.Row - 1); i < 8; i--) // byte wraps to 255
+            {
+                if (_board[i, Xposition.Col] == BoardSpaceValue.Empty)
+                {
+                    moves.Add(new BoardSpace(i, Xposition.Col));
+                }
+                else { break; }
+            }
+
+            #endregion
+
+            #region vertical moves
+
+            for (var j = (byte)(Xposition.Col + 1); j < 8; j++)
+            {
+                if (_board[Xposition.Row, j] == BoardSpaceValue.Empty)
+                {
+                    moves.Add(new BoardSpace(Xposition.Row, j));
+                }
+                else { break; }
+            }
+
+            for (var j = (byte)(Xposition.Col - 1); j < 8; j--) // byte wraps to 255
+            {
+                if (_board[Xposition.Row, j] == BoardSpaceValue.Empty)
+                {
+                    moves.Add(new BoardSpace(Xposition.Row, j));
+                }
+                else { break; }
+            }
+
+            #endregion
+
+            #region diagonal moves
+
+            for (byte i = (byte)(Xposition.Row + 1), j = (byte)(Xposition.Col + 1); i < 8 && j < 8; i++, j++)
+            {
+                if (_board[i, j] == BoardSpaceValue.Empty)
+                {
+                    moves.Add(new BoardSpace(i, j));
+                }
+                else { break; }
+            }
+
+            for (byte i = (byte)(Xposition.Row - 1), j = (byte)(Xposition.Col - 1); i < 8 && j < 8; i--, j--)
+            {
+                if (_board[i, j] == BoardSpaceValue.Empty)
+                {
+                    moves.Add(new BoardSpace(i, j));
+                }
+                else { break; }
+            }
+
+            #endregion
+
+            return moves;
+        } 
     }
 }
