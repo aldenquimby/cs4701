@@ -14,7 +14,7 @@ namespace Search
     /// <summary>
     /// Wrapper for heuristic interface to make implementation cleaner
     /// </summary>
-    public abstract class HeurisitcBase<T> : IHeuristic where T : StateBase
+    public abstract class HeuristicBase<T> : IHeuristic where T : StateBase
     {
         public int Evaluate(StateBase state, StateBase goal)
         {

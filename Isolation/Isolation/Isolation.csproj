@@ -35,6 +35,11 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AlphaBeta.cs" />
+    <Compile Include="Board.cs" />
+    <Compile Include="Heuristics.cs" />
+    <Compile Include="Minimax.cs" />
+    <Compile Include="MoveGenerator.cs" />
     <Compile Include="MoveTimer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
