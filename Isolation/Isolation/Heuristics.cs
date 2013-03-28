@@ -3,9 +3,7 @@ using System.Collections.Generic;
 
 namespace Isolation
 {
-    /// <summary>
-    /// Generic isolation board evaluator
-    /// </summary>
+    // Generic isolation board evaluator
     public abstract class HeuristicBase
     {
         public abstract int Evaluate(Board board);
@@ -30,31 +28,32 @@ namespace Isolation
         }
     }
     
-    /// <summary>
-    /// Heuristic for the first part of the isolation game
-    /// </summary>
-    public class BeginningHeuristic : HeuristicBase
+    // Number possible moves for me, minus number possible moves for opponent
+    public class NumberOfMovesHeuristic : HeuristicBase
     {
-        public override int Evaluate(Board board)
+        private readonly MoveGenerator _generator;
+
+        public NumberOfMovesHeuristic(MoveGenerator generator)
         {
-            throw new NotImplementedException();
+            _generator = generator;
         }
 
-        public override string Name { get { return "BeginningHeuristic"; } }
-    }
-
-    /// <summary>
-    /// Heuristic for the first part of the isolation game
-    /// </summary>
-    public class EndHeuristic : HeuristicBase
-    {
         public override int Evaluate(Board board)
         {
-            //TODO implement this bad boy
-            return new BeginningHeuristic().Evaluate(board);
+            var xMoves = _generator.GetMovesForX(board);
+            var oMoves = _generator.GetMovesForO(board);
+
+            if (board.MyPlayer == Player.X)
+            {
+                return xMoves.Count - oMoves.Count;
+            }
+            else
+            {
+                return oMoves.Count - xMoves.Count;
+            }
         }
 
-        public override string Name { get { return "EndHeuristic"; } }
+        public override string Name { get { return "NumberOfMoves"; } }
     }
 
     /// <summary>
@@ -93,12 +92,12 @@ namespace Isolation
 
         public void LoadCacheFromDb()
         {
-            
+            throw new NotImplementedException();
         }
 
         public void DumpCacheToDb()
         {
-            
+            throw new NotImplementedException();
         }
     }
 }

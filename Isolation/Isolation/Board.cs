@@ -6,7 +6,9 @@ namespace Isolation
 {
     public class Board : IEquatable<Board>
     {
-        private readonly BoardSpaceValue[,] _board;
+        public Player MyPlayer { get; private set; }
+
+        private BoardSpaceValue[,] _board;
 
         public BoardSpace Xposition { get; private set; }
         public BoardSpace Oposition { get; private set; }
@@ -52,22 +54,12 @@ namespace Isolation
             }
         }
 
-        public Board(Board copy)
+        private Board(Player myPlayer)
         {
-            Xposition = copy.Xposition;
-            Oposition = copy.Oposition;
-
-            _board = new BoardSpaceValue[8, 8];
-            for (byte i = 0; i < 8; i++)
-            {
-                for (byte j = 0; j < 8; j++)
-                {
-                    _board[i, j] = copy._board[i, j];
-                }
-            }
+            MyPlayer = myPlayer;
         }
 
-        public Board(IList<string> boardRows)
+        public Board(IList<string> boardRows, Player myPlayer) : this(myPlayer)
         {
             _board = new BoardSpaceValue[8,8];
 
@@ -102,19 +94,56 @@ namespace Isolation
             }
         }
 
-        public bool IsGameOver()
+        public Board Copy()
         {
-            return false;
+            var board = new Board(MyPlayer)
+            {
+                Xposition = Xposition,
+                Oposition = Oposition,
+                _board = new BoardSpaceValue[8, 8]
+            };
+
+            for (byte i = 0; i < 8; i++)
+            {
+                for (byte j = 0; j < 8; j++)
+                {
+                    board._board[i, j] = _board[i, j];
+                }
+            }
+
+            return board;
         }
 
-        public void MoveX(BoardSpace move)
+        #region win/lose/forfeit
+
+        public Player? Winner { get; private set; }
+
+        public void Forfeit()
+        {
+            Winner = MyPlayer == Player.X ? Player.O : Player.X;
+        }
+
+        public void ForfeitOpponent()
+        {
+            Winner = MyPlayer;
+        }
+
+        #endregion
+
+        public void MoveMe(BoardSpace move)
         {
             
         }
 
-        public void MoveO(BoardSpace move)
+        public void MoveOpponent(BoardSpace move)
         {
             
+        }
+
+        public bool IsValidOpponentMove(BoardSpace move)
+        {
+            // TODO: validate that opponent can move here
+            return true;
         }
 
         public override string ToString()
@@ -177,14 +206,6 @@ namespace Isolation
         }
 
         #endregion
-    }
-
-    public enum BoardSpaceValue : byte
-    {
-        Empty = 1,
-        Filled = 2,
-        PlayerX = 4,
-        PlayerO = 8,
     }
 
     public class BoardSpace
