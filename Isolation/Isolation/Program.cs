@@ -56,5 +56,25 @@ namespace Isolation
                 Console.ReadKey();
             }
         }
+
+        private static void Test()
+        {
+            var a = new List<string>(8)
+                {
+                    "********",
+                    "-**-**o*",
+                    "****-**-",
+                    "--******",
+                    "*--****-",
+                    "x****---",
+                    "-*-*--*-",
+                    "-***---*",
+                };
+
+            var board = new Board(a, Player.O);
+            var moves3 = board.GetValidMoves();
+            var nextMove = Searcher.I.GetMyNextMove(board);
+            var x = 4;
+        }
     }
 }

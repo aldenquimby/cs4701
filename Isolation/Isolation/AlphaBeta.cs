@@ -71,9 +71,11 @@ namespace Isolation
                 // return new BestMoveResult(_evaluator.Evaluate(board, _heuristic), null);
             }
 
-            BoardSpace bestMove = null;
-
             var validMoves = board.GetValidMoves();
+
+            // try to initialize bestMove to the first possible move, so it will be returned if it's the only move
+            var bestMove = validMoves.Count > 0 ? validMoves.First() : null;
+
             var validMovesWithBoard = validMoves.Select(x =>
                 {
                     var boardCopy = board.Copy();

@@ -213,16 +213,6 @@ namespace Isolation
             return moves;
         } 
 
-        private List<BoardSpace> GetMovesForX()
-        {
-            return GetMoves(Xposition);
-        }
-
-        private List<BoardSpace> GetMovesForO()
-        {
-            return GetMoves(Oposition);
-        }
-
         public List<BoardSpace> GetMyValidMoves()
         {
             return MyPlayer == Player.X ? GetMoves(Xposition) : GetMoves(Oposition);

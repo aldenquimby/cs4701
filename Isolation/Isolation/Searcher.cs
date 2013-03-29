@@ -26,7 +26,7 @@ namespace Isolation
 
         public BoardSpace GetMyNextMove(Board board)
         {
-            const int depthLimit = 5;
+            const int depthLimit = 3;
 
             _timer.StartTimer();
             var bestMove = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());

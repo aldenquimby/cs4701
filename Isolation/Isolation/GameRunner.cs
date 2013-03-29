@@ -88,6 +88,14 @@ namespace Isolation
         // perform opponents next move on the board
         private static void OpponentMove(Board board)
         {
+            // if opponent can't move, i win!
+            if (board.GetOpponentValidMoves().Count == 0)
+            {
+                Logger.Log("Opponent cannot move.");
+                board.ForfeitOpponent();
+                return;
+            }
+
             // ask for move
             var move = GetOpponentMove();
 
@@ -98,6 +106,7 @@ namespace Isolation
                 Logger.Log("This is not a valid opponent move!");
                 Logger.Log("Was this entered correctly? (Y/N):");
 
+                // if opponent enters invalid move, they forfeit
                 if ("Y".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
                 {
                     Logger.Log("Opponent forfeits from invalid move.");
