@@ -120,22 +120,22 @@ namespace Isolation
 
             #region vertical moves
 
-            // walk up from currentPosition
-            for (var i = (byte)(currentPosition.Row + 1); i < 8; i++)
+            // walk down from currentPosition
+            for (var i = currentPosition.Row + 1; i < 8; i++)
             {
                 if (_board[i, currentPosition.Col] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(i, currentPosition.Col));
+                    moves.Add(new BoardSpace((byte)i, currentPosition.Col));
                 }
                 else { break; }
             }
 
-            // walk down from currentPosition
-            for (var i = (byte)(currentPosition.Row - 1); i < 8; i--) // byte wraps to 255
+            // walk up from currentPosition
+            for (var i = currentPosition.Row - 1; i >= 0; i--)
             {
                 if (_board[i, currentPosition.Col] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(i, currentPosition.Col));
+                    moves.Add(new BoardSpace((byte)i, currentPosition.Col));
                 }
                 else { break; }
             }
@@ -145,21 +145,21 @@ namespace Isolation
             #region horizontal moves
 
             // walk right from currentPosition
-            for (var j = (byte)(currentPosition.Col + 1); j < 8; j++)
+            for (var j = currentPosition.Col + 1; j < 8; j++)
             {
                 if (_board[currentPosition.Row, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(currentPosition.Row, j));
+                    moves.Add(new BoardSpace(currentPosition.Row, (byte)j));
                 }
                 else { break; }
             }
 
             // walk left from currentPosition
-            for (var j = (byte)(currentPosition.Col - 1); j < 8; j--) // byte wraps to 255
+            for (var j = currentPosition.Col - 1; j >= 0; j--)
             {
                 if (_board[currentPosition.Row, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(currentPosition.Row, j));
+                    moves.Add(new BoardSpace(currentPosition.Row, (byte)j));
                 }
                 else { break; }
             }
@@ -169,41 +169,41 @@ namespace Isolation
             #region diagonal moves
 
             // walk down-right from currentPosition
-            for (byte i = (byte)(currentPosition.Row + 1), j = (byte)(currentPosition.Col + 1); i < 8 && j < 8; i++, j++)
+            for (int i = currentPosition.Row + 1, j = currentPosition.Col + 1; i < 8 && j < 8; i++, j++)
             {
                 if (_board[i, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(i, j));
+                    moves.Add(new BoardSpace((byte)i, (byte)j));
                 }
                 else { break; }
             }
 
             // walk down-left from currentPosition
-            for (byte i = (byte)(currentPosition.Row + 1), j = (byte)(currentPosition.Col - 1); i < 8 && j < 8; i++, j--)
+            for (int i = currentPosition.Row + 1, j = currentPosition.Col - 1; i < 8 && j >=0; i++, j--)
             {
                 if (_board[i, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(i, j));
+                    moves.Add(new BoardSpace((byte)i, (byte)j));
                 }
                 else { break; }
             }
 
             // walk up-right from currentPosition
-            for (byte i = (byte)(currentPosition.Row - 1), j = (byte)(currentPosition.Col + 1); i < 8 && j < 8; i--, j++)
+            for (int i = currentPosition.Row - 1, j = currentPosition.Col + 1; i >=0 && j < 8; i--, j++)
             {
                 if (_board[i, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(i, j));
+                    moves.Add(new BoardSpace((byte)i, (byte)j));
                 }
                 else { break; }
             }
 
             // walk up-left from currentPosition
-            for (byte i = (byte)(currentPosition.Row - 1), j = (byte)(currentPosition.Col - 1); i < 8 && j < 8; i--, j--)
+            for (int i = currentPosition.Row - 1, j = currentPosition.Col - 1; i >=0 && j >=0; i--, j--)
             {
                 if (_board[i, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(i, j));
+                    moves.Add(new BoardSpace((byte)i, (byte)j));
                 }
                 else { break; }
             }

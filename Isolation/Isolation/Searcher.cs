@@ -29,20 +29,23 @@ namespace Isolation
             const int depthLimit = 4;
 
             _timer.StartTimer();
+            var bestMove = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
+            Logger.Log(string.Format("\n\nDESCENDING\n{0}Time remaining: {1} ms\n", bestMove, _timer.GetTimeRemaining().TotalMilliseconds));
 
-            var bestMove = _alphaBeta.BestMove(board, depthLimit, int.MinValue, int.MaxValue, new NumberOfMovesHeuristic());
+            _timer.StartTimer();
+            AlphaBeta.ShouldOrderMovesDesc = false;
+            var sortedBackwards = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
+            Logger.Log(string.Format("\n\nASCENDING\n{0}Time remaining: {1} ms\n", sortedBackwards, _timer.GetTimeRemaining().TotalMilliseconds));
 
-            //foreach (var move in board.GetValidMoves())
-            //{
-            //    var tmp = board.Copy();
-            //    tmp.Move(move);
+            _timer.StartTimer();
+            AlphaBeta.ShouldOrderMovesDesc = null;
+            var unsorted = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
+            Logger.Log(string.Format("\n\nNO ORDER\n{0}Time remaining: {1} ms\n", unsorted, _timer.GetTimeRemaining().TotalMilliseconds));
 
-            //    var score = _evaluator.Evaluate(tmp, new NumberOfMovesHeuristic());
-            //    Logger.Log(tmp.ToString(), false);
-            //    Logger.Log("SCORE: " + score + "\n", false);
-            //}
-
-            Logger.Log("Time remaining: " + _timer.GetTimeRemaining().TotalMilliseconds + " ms");
+            _timer.StartTimer();
+            AlphaBeta.ShouldAlphaBeta = false;
+            var minimax = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
+            Logger.Log(string.Format("\n\nMINIMAX\n{0}Time remaining: {1} ms\n", minimax, _timer.GetTimeRemaining().TotalMilliseconds));
 
             return bestMove.Move;
         }
@@ -50,7 +53,7 @@ namespace Isolation
 
     public static class Logger
     {
-        private const string FilePath = @"C:\Users\AldenQuimby\Desktop\log.txt";
+        private static readonly string FilePath = string.Format(@"C:\Users\AldenQuimby\Desktop\Logs\log-{0}.txt", DateTime.Now.ToString("MMddHHmmssfff"));
 
         public static void Log(string msg, bool consoleLog = true)
         {
@@ -58,7 +61,6 @@ namespace Isolation
             {
                 Console.WriteLine(msg);
             }
-            return;
             using (var file = new StreamWriter(FilePath, true))
             {
                 file.WriteLine(DateTime.Now.ToString("HH:mm") + " " + msg);
