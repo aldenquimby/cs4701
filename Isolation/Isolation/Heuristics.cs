@@ -70,7 +70,7 @@ namespace Isolation
                 _cache[heuristic][board] = heuristic.Evaluate(board);
             }
 
-            return _cache[heuristic][board];
+            return _cache[heuristic][board] + 500;
         }
 
         public void LoadCacheFromDb()

@@ -16,7 +16,7 @@ namespace Isolation
             // play until there is a winner
             while (board.Winner == null)
             {
-                Console.WriteLine("\n" + board); // TODO remove
+                Logger.Log("\n" + board); // TODO remove
 
                 // player X moves first
                 if (board.MyPlayer == Player.X)
@@ -28,7 +28,7 @@ namespace Isolation
                     OpponentMove(board);
                 }
 
-                Console.WriteLine("\n" + board); // TODO remove
+                Logger.Log("\n" + board); // TODO remove
 
                 // if there is a winner, game over
                 if (board.Winner != null)
@@ -48,24 +48,24 @@ namespace Isolation
             }
 
             // report win/loss
-            Console.WriteLine(board.Winner == board.MyPlayer ? "I win :)." : "I lose :(.");
+            Logger.Log(board.Winner == board.MyPlayer ? "I win :)." : "I lose :(.");
             Console.ReadKey();
         }
 
         // ask user which player I am
         private static Player GetPlayer()
         {
-            Console.WriteLine("Are you player 'X' or player 'O'?");
+            Logger.Log("Am I player 'X' or player 'O'?");
 
             var input = Console.ReadLine();
 
             while (!"O".Equals(input, StringComparison.OrdinalIgnoreCase) && !"X".Equals(input, StringComparison.OrdinalIgnoreCase))
             {
-                Console.WriteLine("Please enter 'X' or 'O'.");
+                Logger.Log("Please enter 'X' or 'O'.");
                 input = Console.ReadLine();
             }
 
-            return (Player)Enum.Parse(typeof(Player), input);
+            return (Player)Enum.Parse(typeof(Player), input.ToUpper());
         }
 
         // perform my next move on the board
@@ -75,14 +75,14 @@ namespace Isolation
 
             if (myMove == null)
             {
-                Console.WriteLine("I cannot move!");
+                Logger.Log("I cannot move!");
                 board.Forfeit();
                 return;
             }
 
             board.Move(myMove);
-            Console.WriteLine("My move:");
-            Console.WriteLine(myMove.ToString());
+            Logger.Log("My move:");
+            Logger.Log(myMove.ToString());
         }
 
         // perform opponents next move on the board
@@ -95,12 +95,12 @@ namespace Isolation
             var isValid = board.IsValidMove(move);
             while (!isValid)
             {
-                Console.WriteLine("This is not a valid opponent move!");
-                Console.WriteLine("Was this entered correctly? (Y/N):");
+                Logger.Log("This is not a valid opponent move!");
+                Logger.Log("Was this entered correctly? (Y/N):");
 
                 if ("Y".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine("Opponent forfeits from invalid move.");
+                    Logger.Log("Opponent forfeits from invalid move.");
                     board.ForfeitOpponent();
                     return;
                 }
@@ -116,7 +116,7 @@ namespace Isolation
         // ask user for next opponent move
         private static BoardSpace GetOpponentMove()
         {
-            Console.WriteLine("Enter opponent move (row col):");
+            Logger.Log("Enter opponent move (row col):");
 
             BoardSpace move = null;
 
@@ -129,7 +129,7 @@ namespace Isolation
                 }
                 catch
                 {
-                    Console.WriteLine("Error reading move, use the format (row col):");
+                    Logger.Log("Error reading move, use the format (row col):");
                 }
             }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Isolation
 {
@@ -25,25 +26,43 @@ namespace Isolation
 
         public BoardSpace GetMyNextMove(Board board)
         {
+            const int depthLimit = 4;
+
             _timer.StartTimer();
 
-            var bestMove = _alphaBeta.BestMove(board.Copy(), 5, int.MinValue, int.MaxValue, new NumberOfMovesHeuristic());
-            
-            Console.WriteLine("Should I print rough heuristics? (Y/N)");
-            if ("Y".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
-            {
-                foreach (var move in board.GetValidMoves())
-                {
-                    var tmp = board.Copy();
-                    tmp.Move(move);
+            var bestMove = _alphaBeta.BestMove(board, depthLimit, int.MinValue, int.MaxValue, new NumberOfMovesHeuristic());
 
-                    var score = _evaluator.Evaluate(tmp, new NumberOfMovesHeuristic());
-                    Console.WriteLine(tmp);
-                    Console.WriteLine("SCORE: " + score + "\n");
-                }
-            }
+            //foreach (var move in board.GetValidMoves())
+            //{
+            //    var tmp = board.Copy();
+            //    tmp.Move(move);
+
+            //    var score = _evaluator.Evaluate(tmp, new NumberOfMovesHeuristic());
+            //    Logger.Log(tmp.ToString(), false);
+            //    Logger.Log("SCORE: " + score + "\n", false);
+            //}
+
+            Logger.Log("Time remaining: " + _timer.GetTimeRemaining().TotalMilliseconds + " ms");
 
             return bestMove.Move;
+        }
+    }
+
+    public static class Logger
+    {
+        private const string FilePath = @"C:\Users\AldenQuimby\Desktop\log.txt";
+
+        public static void Log(string msg, bool consoleLog = true)
+        {
+            if (consoleLog)
+            {
+                Console.WriteLine(msg);
+            }
+            return;
+            using (var file = new StreamWriter(FilePath, true))
+            {
+                file.WriteLine(DateTime.Now.ToString("HH:mm") + " " + msg);
+            }
         }
     }
 }

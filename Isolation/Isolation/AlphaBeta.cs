@@ -12,7 +12,7 @@
         }
 
         /// <summary>
-        /// INITIAL CALL NEEDS: odd depth, -inifinity alpha, infinity beta
+        /// INITIAL CALL NEEDS: even depth, -inifinity alpha, infinity beta
         /// </summary>
         public BestMoveResult BestMove(Board board, int depth, int alpha, int beta, HeuristicBase heuristic)
         {
@@ -25,7 +25,7 @@
             // if we have less than 10% of time left, return
             if (_timer.GetPercentOfTimeRemaining() < 0.1)
             {
-                System.Console.WriteLine("!!Timeout!!"); //TODO remove
+                Logger.Log("!!Timeout!!"); //TODO remove
                 return new BestMoveResult(_evaluator.Evaluate(board, heuristic), null);
             }
 
@@ -44,10 +44,6 @@
                 // is this the best move so far?
                 if (tryScore > bestScore)
                 {
-                    //System.Console.WriteLine("Found better move!");
-                    //System.Console.WriteLine(board.ToString());
-                    //System.Console.WriteLine("SCORE: " + tryScore);
-
                     bestScore = tryScore;
                     bestMove = move;
                 }
@@ -55,6 +51,10 @@
                 // alpha-beta cuttoff here
                 if (bestScore > beta)
                 {
+                    Logger.Log("alpha beta cutoff!", false);
+                    Logger.Log(boardCopy.ToString(), false);
+                    Logger.Log("Best score: " + bestScore, false);
+                    Logger.Log("Best move: " + bestMove + "\n", false);
                     return new BestMoveResult(bestScore, bestMove);
                 }
             }

@@ -32,17 +32,13 @@ namespace Isolation
                 "------*-",
             }, Player.X);
 
-            Console.WriteLine(b1.ToString());
-            Console.WriteLine();
-            Console.WriteLine("Moves for x:");
-            Console.WriteLine(string.Join("\n", b1.GetValidMoves().Select(x => x.ToString())));
-            Console.WriteLine();
+            Logger.Log(b1 + "\n");
+            Logger.Log("Moves for x:");
+            Logger.Log(string.Join("\n", b1.GetValidMoves().Select(x => x.ToString())) + "\n");
 
-            Console.WriteLine(b2.ToString());
-            Console.WriteLine();
-            Console.WriteLine("Moves for x:");
-            Console.WriteLine(string.Join("\n", b2.GetValidMoves().Select(x => x.ToString())));
-            Console.WriteLine();
+            Logger.Log(b2.ToString() + "\n");
+            Logger.Log("Moves for x:");
+            Logger.Log(string.Join("\n", b2.GetValidMoves().Select(x => x.ToString())) + "\n");
 
             Console.ReadKey();
         }
@@ -55,8 +51,8 @@ namespace Isolation
             }
             catch (Exception e)
             {
-                Console.WriteLine("********* FIERY DEATH! *********");
-                Console.WriteLine(e);
+                Logger.Log("********* FIERY DEATH! *********");
+                Logger.Log(e.ToString());
                 Console.ReadKey();
             }
         }
