@@ -9,7 +9,7 @@ namespace Isolation
     {
         private readonly BoardSpaceValue[,] _board;
 
-        private Player _playerToMove;
+        public Player PlayerToMove { get; private set; }
         public Player MyPlayer { get; private set; }
         public BoardSpace Xposition { get; private set; }
         public BoardSpace Oposition { get; private set; }
@@ -32,7 +32,7 @@ namespace Isolation
             {
                 Xposition = new BoardSpace(0, 0),
                 Oposition = new BoardSpace(7, 7),
-                _playerToMove = Player.X,
+                PlayerToMove = Player.X,
             };
 
             for (byte i = 0; i < 8; i++)
@@ -55,7 +55,7 @@ namespace Isolation
             {
                 Xposition = Xposition,
                 Oposition = Oposition,
-                _playerToMove = _playerToMove,
+                PlayerToMove = PlayerToMove,
             };
 
             for (byte i = 0; i < 8; i++)
@@ -89,19 +89,19 @@ namespace Isolation
 
         public void Move(BoardSpace move)
         {
-            if (_playerToMove == Player.X)
+            if (PlayerToMove == Player.X)
             {
                 _board[Xposition.Row, Xposition.Col] = BoardSpaceValue.Filled;
                 _board[move.Row, move.Col] = BoardSpaceValue.PlayerX;
                 Xposition = move;
-                _playerToMove = Player.O;
+                PlayerToMove = Player.O;
             }
             else
             {
                 _board[Oposition.Row, Oposition.Col] = BoardSpaceValue.Filled;
                 _board[move.Row, move.Col] = BoardSpaceValue.PlayerO;
                 Oposition = move;
-                _playerToMove = Player.X;
+                PlayerToMove = Player.X;
             }
         }
 
@@ -111,7 +111,7 @@ namespace Isolation
 
         public List<BoardSpace> GetValidMoves()
         {
-            return _playerToMove == Player.X ? GetMoves(Xposition) : GetMoves(Oposition);
+            return PlayerToMove == Player.X ? GetMoves(Xposition) : GetMoves(Oposition);
         } 
 
         private List<BoardSpace> GetMoves(BoardSpace currentPosition)
@@ -369,7 +369,7 @@ namespace Isolation
                 }
             }
 
-            _playerToMove = totalMoves % 2 == 0 ? Player.X : Player.O;
+            PlayerToMove = totalMoves % 2 == 0 ? Player.X : Player.O;
         }
 
         public override string ToString()

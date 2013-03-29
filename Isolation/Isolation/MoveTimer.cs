@@ -33,7 +33,7 @@ namespace Isolation
 
         public double GetPercentOfTimeRemaining()
         {
-            return (double) (_timeout.Ticks - _sw.ElapsedTicks)/_timeout.Ticks;
+            return ((double) (_timeout.Ticks - _sw.ElapsedTicks))/_timeout.Ticks;
         }
     }
 }

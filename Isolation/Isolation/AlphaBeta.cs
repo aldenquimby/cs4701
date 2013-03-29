@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Isolation
@@ -16,7 +18,6 @@ namespace Isolation
 
         private HeuristicBase _heuristic;
         private int _numNodesGenerated;
-        private int _numAlphaBetaCutoffs;
         private int _numNodesAtDepthLimit;
 
         public static bool ShouldAlphaBeta = true;
@@ -24,12 +25,32 @@ namespace Isolation
 
         public BestMoveResult BestMove(Board board, int depthLimit, HeuristicBase heuristic)
         {
+            // initialize stats
             _heuristic = heuristic;
             _numNodesGenerated = 0;
-            _numAlphaBetaCutoffs = 0;
             _numNodesAtDepthLimit = 0;
 
-            return BestMove(board, depthLimit, int.MinValue, int.MaxValue);
+            var result = BestMove(board, depthLimit, int.MinValue, int.MaxValue);
+            
+            // fill stats
+            result.HeurisiticName = _heuristic.Name;
+            result.NumNodesAtDepthLimit = _numNodesAtDepthLimit;
+            result.NumNodesGenerated = _numNodesGenerated;
+            
+            return result;
+        }
+
+        private static int GetNumNodesTrimmed(Dictionary<int, int> cuttoffsByDepth, int branchingFactor)
+        {
+            var result = 0;
+            foreach (var kvp in cuttoffsByDepth)
+            {
+                var depthCutoff = kvp.Key - 1;
+                var numCuttoffs = kvp.Value;
+                var nodesTrimmedPerCutoff = (int)Math.Pow(branchingFactor, depthCutoff);
+                result += nodesTrimmedPerCutoff * numCuttoffs;
+            }
+            return result;
         }
 
         // INITIAL CALL NEEDS: even depth, -inifinity alpha, infinity beta
@@ -40,19 +61,20 @@ namespace Isolation
             if (depth == 0)
             {
                 _numNodesAtDepthLimit++;
-                return ReturnResult(_evaluator.Evaluate(board, _heuristic), null);
+                return new BestMoveResult(_evaluator.Evaluate(board, _heuristic), null);
             }
 
             // if we have less than 10% of time left, return
             if (_timer.GetPercentOfTimeRemaining() < 0.1)
             {
-                Logger.Log("!!Timeout!!"); //TODO remove
-                // return ReturnResult(_evaluator.Evaluate(board, _heuristic), null);
+                // Logger.Log("!!Timeout!!"); //TODO remove
+                // return new BestMoveResult(_evaluator.Evaluate(board, _heuristic), null);
             }
 
             BoardSpace bestMove = null;
 
-            var validMoves = board.GetValidMoves().Select(x =>
+            var validMoves = board.GetValidMoves();
+            var validMovesWithBoard = validMoves.Select(x =>
                 {
                     var boardCopy = board.Copy();
                     boardCopy.Move(x);
@@ -61,63 +83,64 @@ namespace Isolation
 
             if (ShouldOrderMovesDesc == true)
             {
-                validMoves = validMoves.OrderByDescending(x => _evaluator.Evaluate(x.board, _heuristic));
+                validMovesWithBoard = validMovesWithBoard.OrderByDescending(x => _evaluator.Evaluate(x.board, _heuristic));
             }
             else if (ShouldOrderMovesDesc == false)
             {
-                validMoves = validMoves.OrderBy(x => _evaluator.Evaluate(x.board, _heuristic));
+                validMovesWithBoard = validMovesWithBoard.OrderBy(x => _evaluator.Evaluate(x.board, _heuristic));
             }
 
-            foreach (var move in validMoves)
+            var isMaxTurn = board.MyPlayer == board.PlayerToMove;
+
+            foreach (var move in validMovesWithBoard)
             {
                 _numNodesGenerated++;
-                
-                var tryMoveResult = BestMove(move.board, depth - 1, -beta, -alpha);
-                var tryScore = -tryMoveResult.Score;
 
-                //Logger.Log(string.Format("At depth {0}: Alpha {1} Beta {2} Score {3}", depth, alpha.ToString().PadRight(11), beta.ToString().PadRight(11), tryScore.ToString().PadRight(11)), false);
+                var childResult = BestMove(move.board, depth - 1, alpha, beta);
 
-                // is this the best move so far?
-                if (tryScore > alpha)
+                if (isMaxTurn) // if it's a max turn, we want to check alpha
                 {
-                    alpha = tryScore;
-                    bestMove = move.move;
-                }
-
-                if (ShouldAlphaBeta)
-                {
-                    // alpha-beta cuttoff here
-                    if (alpha > beta)
+                    if (childResult.Score > alpha)
                     {
-                        _numAlphaBetaCutoffs++;
-                        return ReturnResult(alpha, bestMove);
-                    }                    
+                        alpha = childResult.Score;
+                        bestMove = move.move;
+                    }
+
+                    if (ShouldAlphaBeta && alpha >= beta)
+                    {
+                        return new BestMoveResult(alpha, bestMove);
+                    }
+                }
+                else // else it's a min turn, so we want to check beta 
+                {
+                    if (childResult.Score < beta)
+                    {
+                        beta = childResult.Score;
+                        bestMove = move.move;
+                    }
+
+                    if (ShouldAlphaBeta && alpha >= beta)
+                    {
+                        return new BestMoveResult(beta, bestMove);
+                    }
                 }
             }
 
-            return ReturnResult(alpha, bestMove);
-        }
-
-        private BestMoveResult ReturnResult(int bestScore, BoardSpace bestMove)
-        {
-            return new BestMoveResult
-                {
-                    Score = bestScore,
-                    Move = bestMove,
-                    NumAlphaBetaCutoffs = _numAlphaBetaCutoffs,
-                    NumNodesAtDepthLimit = _numNodesAtDepthLimit,
-                    NumNodesGenerated = _numNodesGenerated,
-                    HeurisiticName = _heuristic.Name,
-                };
+            return new BestMoveResult(isMaxTurn ? alpha : beta, bestMove);
         }
     }
 
     public class BestMoveResult
     {
+        public BestMoveResult(int score, BoardSpace bestMove)
+        {
+            Score = score;
+            Move = bestMove;
+        }
+
         public int Score { get; set; }
         public BoardSpace Move { get; set; }
         public int NumNodesGenerated { get; set; }
-        public int NumAlphaBetaCutoffs { get; set; }
         public int NumNodesAtDepthLimit { get; set; }
         public string HeurisiticName { get; set; }
 
@@ -128,7 +151,6 @@ namespace Isolation
             builder.AppendLine("Score: " + Score);
             builder.AppendLine("Heuristic: " + HeurisiticName);
             builder.AppendLine("Nodes Generated: " + NumNodesGenerated);
-            builder.AppendLine("Alpha/Beta Trims: " + NumAlphaBetaCutoffs);
             builder.AppendLine("Depth Limit Nodes: " + NumNodesAtDepthLimit);
             return builder.ToString();
         }
