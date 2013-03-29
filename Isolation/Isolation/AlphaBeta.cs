@@ -1,21 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Isolation
+﻿namespace Isolation
 {
     public class AlphaBeta
     {
         private readonly HeuristicCache _evaluator;
-        private readonly MoveGenerator _generator;
         private readonly MoveTimer _timer;
 
-        public AlphaBeta(HeuristicCache evaluator, MoveGenerator generator, MoveTimer timer)
+        public AlphaBeta(HeuristicCache evaluator, MoveTimer timer)
         {
             _evaluator = evaluator;
-            _generator = generator;
             _timer = timer;
         }
 
@@ -30,31 +22,34 @@ namespace Isolation
                 return new BestMoveResult(_evaluator.Evaluate(board, heuristic), null);
             }
 
-            // if we're out of time, return
-            if (_timer.GetTimeRemaining() < TimeSpan.FromSeconds(1))
+            // if we have less than 10% of time left, return
+            if (_timer.GetPercentOfTimeRemaining() < 0.1)
             {
+                System.Console.WriteLine("!!Timeout!!"); //TODO remove
                 return new BestMoveResult(_evaluator.Evaluate(board, heuristic), null);
             }
-
-            var moveList = _generator.GetMovesForX(board);
 
             var bestScore = alpha;
             BoardSpace bestMove = null;
 
-            foreach (var move in moveList)
+            foreach (var move in board.GetValidMoves())
             {
                 var boardCopy = board.Copy();
-                boardCopy.MoveMe(move);
+                boardCopy.Move(move);
 
-                var tryMoveResult = BestMove(boardCopy, depth - 1, -beta, -alpha, heuristic);
+                var tryMoveResult = BestMove(boardCopy, depth - 1, -beta, -bestScore, heuristic);
 
                 var tryScore = -tryMoveResult.Score;
 
                 // is this the best move so far?
                 if (tryScore > bestScore)
                 {
+                    //System.Console.WriteLine("Found better move!");
+                    //System.Console.WriteLine(board.ToString());
+                    //System.Console.WriteLine("SCORE: " + tryScore);
+
                     bestScore = tryScore;
-                    bestMove = tryMoveResult.Move;
+                    bestMove = move;
                 }
 
                 // alpha-beta cuttoff here

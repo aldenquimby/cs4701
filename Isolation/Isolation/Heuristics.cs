@@ -31,26 +31,9 @@ namespace Isolation
     // Number possible moves for me, minus number possible moves for opponent
     public class NumberOfMovesHeuristic : HeuristicBase
     {
-        private readonly MoveGenerator _generator;
-
-        public NumberOfMovesHeuristic(MoveGenerator generator)
-        {
-            _generator = generator;
-        }
-
         public override int Evaluate(Board board)
         {
-            var xMoves = _generator.GetMovesForX(board);
-            var oMoves = _generator.GetMovesForO(board);
-
-            if (board.MyPlayer == Player.X)
-            {
-                return xMoves.Count - oMoves.Count;
-            }
-            else
-            {
-                return oMoves.Count - xMoves.Count;
-            }
+            return board.GetMyValidMoves().Count - board.GetOpponentValidMoves().Count;
         }
 
         public override string Name { get { return "NumberOfMoves"; } }

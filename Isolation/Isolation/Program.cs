@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Search;
 
 namespace Isolation
 {
@@ -36,13 +35,13 @@ namespace Isolation
             Console.WriteLine(b1.ToString());
             Console.WriteLine();
             Console.WriteLine("Moves for x:");
-            Console.WriteLine(string.Join("\n", MoveGenerator.I.GetMovesForX(b1).Select(x => x.ToString())));
+            Console.WriteLine(string.Join("\n", b1.GetValidMoves().Select(x => x.ToString())));
             Console.WriteLine();
 
             Console.WriteLine(b2.ToString());
             Console.WriteLine();
             Console.WriteLine("Moves for x:");
-            Console.WriteLine(string.Join("\n", MoveGenerator.I.GetMovesForX(b2).Select(x => x.ToString())));
+            Console.WriteLine(string.Join("\n", b2.GetValidMoves().Select(x => x.ToString())));
             Console.WriteLine();
 
             Console.ReadKey();

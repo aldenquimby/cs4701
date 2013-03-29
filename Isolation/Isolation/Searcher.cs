@@ -13,24 +13,36 @@ namespace Isolation
 
         private readonly AlphaBeta _alphaBeta;
         private readonly MoveTimer _timer;
-        private readonly MoveGenerator _generator;
         private readonly HeuristicCache _evaluator;
 
         public Searcher()
         {
             _timer = MoveTimer.I;
-            _generator = MoveGenerator.I;
             _evaluator = HeuristicCache.I;
 
-            _alphaBeta = new AlphaBeta(_evaluator, _generator, _timer);
+            _alphaBeta = new AlphaBeta(_evaluator, _timer);
         }
 
         public BoardSpace GetMyNextMove(Board board)
         {
             _timer.StartTimer();
 
-            var bestMove = _alphaBeta.BestMove(board, 3, int.MinValue, int.MaxValue, new NumberOfMovesHeuristic(_generator));
+            var bestMove = _alphaBeta.BestMove(board.Copy(), 5, int.MinValue, int.MaxValue, new NumberOfMovesHeuristic());
             
+            Console.WriteLine("Should I print rough heuristics? (Y/N)");
+            if ("Y".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var move in board.GetValidMoves())
+                {
+                    var tmp = board.Copy();
+                    tmp.Move(move);
+
+                    var score = _evaluator.Evaluate(tmp, new NumberOfMovesHeuristic());
+                    Console.WriteLine(tmp);
+                    Console.WriteLine("SCORE: " + score + "\n");
+                }
+            }
+
             return bestMove.Move;
         }
     }

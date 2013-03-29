@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace Isolation
 {
@@ -9,14 +8,16 @@ namespace Isolation
         public static void KickoffNewGame()
         {
             // figure out if I'm player X or O
-            var player = GetPlayer();
+            var myPlayer = GetPlayer();
 
-            // construct the initial board
-            var board = new Board(InitBoard, player);
+            // get the initial board
+            var board = Board.ConstructInitialBoard(myPlayer);
 
             // play until there is a winner
             while (board.Winner == null)
             {
+                Console.WriteLine("\n" + board); // TODO remove
+
                 // player X moves first
                 if (board.MyPlayer == Player.X)
                 {
@@ -26,6 +27,8 @@ namespace Isolation
                 {
                     OpponentMove(board);
                 }
+
+                Console.WriteLine("\n" + board); // TODO remove
 
                 // if there is a winner, game over
                 if (board.Winner != null)
@@ -77,7 +80,7 @@ namespace Isolation
                 return;
             }
 
-            board.MoveMe(myMove);
+            board.Move(myMove);
             Console.WriteLine("My move:");
             Console.WriteLine(myMove.ToString());
         }
@@ -89,7 +92,7 @@ namespace Isolation
             var move = GetOpponentMove();
 
             // ensure it is valid
-            var isValid = board.IsValidOpponentMove(move);
+            var isValid = board.IsValidMove(move);
             while (!isValid)
             {
                 Console.WriteLine("This is not a valid opponent move!");
@@ -101,21 +104,19 @@ namespace Isolation
                     board.ForfeitOpponent();
                     return;
                 }
-                else
-                {
-                    move = GetOpponentMove();
-                    isValid = board.IsValidOpponentMove(move);
-                }
+                
+                move = GetOpponentMove();
+                isValid = board.IsValidMove(move);
             }
 
             // now that we know it's valid, perform move
-            board.MoveOpponent(move);
+            board.Move(move);
         }
 
         // ask user for next opponent move
         private static BoardSpace GetOpponentMove()
         {
-            Console.WriteLine("Enter opponent move (<row> <col>):");
+            Console.WriteLine("Enter opponent move (row col):");
 
             BoardSpace move = null;
 
@@ -128,24 +129,11 @@ namespace Isolation
                 }
                 catch
                 {
-                    Console.WriteLine("Error reading move, use the format (<row> <col>):");
+                    Console.WriteLine("Error reading move, use the format (row col):");
                 }
             }
 
             return move;
         }
-
-        // initial board: X in top left, O in bottom right
-        private static readonly List<string> InitBoard = new List<string>(8)
-        {
-            "x-------",
-            "--------",
-            "--------",
-            "--------",
-            "--------",
-            "--------",
-            "--------",
-            "-------o",
-        };
     }
 }
