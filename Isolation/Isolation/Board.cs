@@ -373,7 +373,11 @@ namespace Isolation
                 {
                     builder.Append(GetCharFromSpace(_board[i, j])).Append(" ");
                 }
-                builder.AppendLine();
+
+                if (i != 7)
+                {
+                    builder.AppendLine();
+                }
             }
             return builder.ToString();
         }
