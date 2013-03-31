@@ -13,20 +13,23 @@ namespace Isolation
             // get configuration (depth limit, quiesence search, etc)
             var config = GetConfig();
 
-            // load up heuristic cache from db
-            if (config.UseDatabaseHeuristicCache)
-            {
-                var heuristics = HeuristicSql.I.GetHeuristicCache();
-                HeuristicCache.I.LoadCache(heuristics);
-            }
+            // set up my move searcher with configuration
+            Searcher.I.Initialize(config);
 
             // get the initial board
             var board = Board.ConstructInitialBoard(myPlayer);
 
+            // load up heuristic cache from db
+            if (config.LoadHeuristicCacheFromDb)
+            {
+                var heuristics = HeuristicSql.I.GetHeuristicCache(board.MyPlayer);
+                HeuristicCache.I.LoadCache(heuristics);
+            }
+
             while (true)
             {
                 // player X moves first
-                if (board.MyPlayer == Player.X)
+                if (board.MyPlayer == Player.X) 
                 {
                     if (!MyMove(board))
                     {
@@ -55,13 +58,11 @@ namespace Isolation
             }
 
             // save heuristic cache to db
-            if (config.UseDatabaseHeuristicCache)
+            if (config.SaveHeuristicCacheToDb)
             {
                 var heuristics = HeuristicCache.I.DumpCache();
-                HeuristicSql.I.SaveHeuristicCache(heuristics);
+                HeuristicSql.I.SaveHeuristicCache(heuristics, board.MyPlayer);
             }
-        
-            Console.ReadKey();
         }
 
         // ask user which player I am
@@ -81,18 +82,18 @@ namespace Isolation
         }
 
         // get alpha-beta configuration
-        private static ClientConfig GetConfig()
+        private static SearchConfig GetConfig()
         {
             Console.WriteLine("Enter configuration: ");
             var input = Console.ReadLine();
 
-            ClientConfig cfg = null;
+            SearchConfig cfg = null;
 
             while (cfg == null)
             {
                 try
                 {
-                    cfg = new ClientConfig(input);
+                    cfg = new SearchConfig(input);
                 }
                 catch
                 {
@@ -127,12 +128,18 @@ namespace Isolation
             // if opponent can't move, i win!
             if (board.GetOpponentValidMoves().Count == 0)
             {
-                Console.WriteLine("Opponent cannot move.");
+                Console.WriteLine("Opponent cannot move!");
                 return false;
             }
 
             // ask for move
             var move = GetOpponentMove();
+
+            if (move == null) //TODO: remove this hack for the server
+            {
+                Console.WriteLine("Opponenet quit.");
+                return false;
+            }
 
             // ensure it is valid
             var isValid = board.IsValidMove(move);
@@ -169,6 +176,12 @@ namespace Isolation
                 try
                 {
                     var input = Console.ReadLine();
+
+                    if ("kill client".Equals(input)) //TODO: remove this server hack
+                    {
+                        return null;
+                    }
+
                     move = new BoardSpace(input);
                 }
                 catch

@@ -11,14 +11,35 @@ namespace Isolation
 
         #endregion
 
-        private readonly AlphaBeta _alphaBeta = new AlphaBeta(HeuristicCache.I, MoveTimer.I);
+        public void Initialize(SearchConfig config)
+        {
+            _config = config;
+            _alphaBeta = new AlphaBeta(HeuristicCache.I, MoveTimer.I);
+        }
+
+        private AlphaBeta _alphaBeta;
+        private SearchConfig _config;
 
         public BoardSpace GetMyNextMove(Board board)
         {
-            const int depthLimit = 5;
+            var bestMove = _alphaBeta.BestMove(board, _config, new NumberOfMovesHeuristic());
 
-            var bestMove = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
-            Console.WriteLine("\nDESCENDING\n{0}Time remaining: {1} ms\n", bestMove, MoveTimer.I.GetTimeRemaining().TotalMilliseconds);
+            if (_config.ReportStatistics)
+            {
+                Console.WriteLine(bestMove.ToString());
+            }
+
+            // if we have over half time remaining, increase the depth limit
+            if (bestMove.PercentOfTimeRemaining > _config.PercentTimeLeftToIncrementDepthLimit)
+            {
+                _config.DepthLimit++;
+            }
+
+            // if we timed out, decrease depth limit
+            if (bestMove.PercentOfTimeRemaining < _config.PercentTimeLeftForTimeout)
+            {
+                _config.DepthLimit--;
+            }
 
             //AlphaBeta.ShouldOrderMovesDesc = false;
             //var sortedBackwards = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());

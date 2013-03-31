@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Isolation
 {
@@ -53,7 +51,6 @@ namespace Isolation
             {
                 Console.WriteLine("********* FIERY DEATH! *********");
                 Console.WriteLine(e.ToString());
-                Console.ReadKey();
             }
         }
 

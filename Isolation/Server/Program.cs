@@ -1,17 +1,25 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Isolation;
 
 namespace Server
 {
     public class Program
     {
-        private static bool AskContinue()
+        private static bool _shouldQuit;
+
+        private static void ListenForQuit()
         {
-            Console.WriteLine("\nContinue game (Q to quit)?");
-            var response = Console.ReadLine();
-            return !"Q".Equals(response, StringComparison.OrdinalIgnoreCase);
+            new Thread(() =>
+                {
+                    var input = Console.ReadLine();
+                    if ("Q".Equals(input))
+                    {
+                        _shouldQuit = true;
+                    }
+                }).Start();
         }
 
         private static void InitializeClient(StreamReader clientOut, StreamWriter clientIn, string player)
@@ -58,7 +66,7 @@ namespace Server
             return new BoardSpace(move);
         }
 
-        private static void SendMoveToClient(StreamReader clientOut, StreamWriter clientIn, BoardSpace move, string player)
+        private static void SendMoveToClient(StreamReader clientOut, StreamWriter clientIn, string move, string player)
         {
             var wait = clientOut.ReadLine();
             while (!"Enter opponent move (row col):".Equals(wait))
@@ -67,7 +75,7 @@ namespace Server
                 wait = clientOut.ReadLine();
             }
 
-            clientIn.WriteLine(move.ToString());
+            clientIn.WriteLine(move);
         }
 
         private static void PlayGame(Process client1, Process client2)
@@ -85,26 +93,40 @@ namespace Server
                 InitializeClient(oOut, oIn, "O");
 
                 PrintBoard(board);
+                ListenForQuit();
+
+                BoardSpace oMove = null;
 
                 while (true)
                 {
-                    if (!AskContinue()) { break; } // user quit
+                    if (_shouldQuit)
+                    {
+                        // user quit
+                        Logger.ServerLog("User quit.");
+                        SendMoveToClient(oOut, oIn, "kill client", "O");
+                        SendMoveToClient(xOut, xIn, "kill client", "X");
+                        break;
+                    }
 
+                    if (oMove != null)
+                    {
+                        SendMoveToClient(xOut, xIn, oMove.ToString(), "O");
+                    }
+                    
                     var xMove = GetMoveFromClient(xOut, "X");
                     if (xMove == null) { break; } // game over
-                    SendMoveToClient(oOut, oIn, xMove, "X");
                     board.Move(xMove);
-
                     PrintBoard(board);
 
-                    var oMove = GetMoveFromClient(oOut, "O");
+                    SendMoveToClient(oOut, oIn, xMove.ToString(), "X");
+                    oMove = GetMoveFromClient(oOut, "O");
                     if (oMove == null) { break; } // game over
-                    SendMoveToClient(xOut, xIn, oMove, "O");
                     board.Move(oMove);
-
                     PrintBoard(board);
                 }
             }
+
+            Logger.ServerLog("Game over.");
         }
 
         private static Process StartClient()
@@ -127,7 +149,6 @@ namespace Server
             try
             {
                 PlayGame(client1, client2);
-                Console.WriteLine("DONE");
                 Console.ReadKey();
             }
             catch (Exception e)
@@ -137,8 +158,14 @@ namespace Server
             }
             finally
             {
-                client1.Kill();
-                client2.Kill();
+                if (!client1.HasExited)
+                {
+                    client1.Kill();
+                }
+                if (!client2.HasExited)
+                {
+                    client2.Kill();
+                }
             }
         }
     }

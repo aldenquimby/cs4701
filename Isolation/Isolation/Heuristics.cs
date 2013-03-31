@@ -16,7 +16,21 @@ namespace Isolation
     {
         public override int Evaluate(Board board)
         {
-            return board.GetMyValidMoves().Count - board.GetOpponentValidMoves().Count;
+            var myMoveCount = board.GetMyValidMoves().Count;
+
+            if (myMoveCount == 0)
+            {
+                return int.MinValue;
+            }
+
+            var opponenentMoveCount = board.GetOpponentValidMoves().Count;
+
+            if (opponenentMoveCount == 0)
+            {
+                return int.MaxValue;
+            }
+
+            return myMoveCount - opponenentMoveCount;
         }
 
         public override string Name { get { return "NumberOfMoves"; } }
@@ -32,11 +46,11 @@ namespace Isolation
 
         #endregion
 
-        private readonly Dictionary<string, Dictionary<Board, int>> _cache;
+        private readonly Dictionary<string, Dictionary<string, int>> _cache;
 
         public HeuristicCache()
         {
-            _cache = new Dictionary<string, Dictionary<Board, int>>();
+            _cache = new Dictionary<string, Dictionary<string, int>>();
         }
 
         public int Evaluate(Board board, HeuristicBase heuristic)
@@ -48,15 +62,17 @@ namespace Isolation
 
             if (!_cache.ContainsKey(heuristic.Name))
             {
-                _cache[heuristic.Name] = new Dictionary<Board, int>();
+                _cache[heuristic.Name] = new Dictionary<string, int>();
             }
 
-            if (!_cache[heuristic.Name].ContainsKey(board))
+            var boardString = board.ToFlatString();
+
+            if (!_cache[heuristic.Name].ContainsKey(boardString))
             {
-                _cache[heuristic.Name][board] = heuristic.Evaluate(board);
+                _cache[heuristic.Name][boardString] = heuristic.Evaluate(board);
             }
 
-            return _cache[heuristic.Name][board];
+            return _cache[heuristic.Name][boardString];
         }
 
         public void LoadCache(IList<HeuristicDto> dtos)
@@ -65,14 +81,12 @@ namespace Isolation
 
             foreach (var dto in dtos)
             {
-                var board = new Board(dto.Board);
-
                 if (!_cache.ContainsKey(dto.Heuristic))
                 {
-                    _cache[dto.Heuristic] = new Dictionary<Board, int>();
+                    _cache[dto.Heuristic] = new Dictionary<string, int>();
                 }
 
-                _cache[dto.Heuristic][board] = dto.Score;
+                _cache[dto.Heuristic][dto.Board] = dto.Score;
             }
         }
 
@@ -82,7 +96,7 @@ namespace Isolation
                 {
                     Heuristic = heuristic.Key,
                     Score = board.Value,
-                    Board = board.Key.ToFlatString(),
+                    Board = board.Key,
                 }).ToList();
 
             _cache.Clear();

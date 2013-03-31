@@ -15,13 +15,14 @@ namespace Isolation
 
         private const string ConnString = @"Datasource=localhost;Database=isolation;uid=root;pwd=passwerd;";
 
-        public IList<HeuristicDto> GetHeuristicCache()
+        public IList<HeuristicDto> GetHeuristicCache(Player myPlayer)
         {
             var heuristics = new List<HeuristicDto>();
 
             const string query = @"
             SELECT Board, Heuristic, Score
-            FROM   HeuristicCache;";
+            FROM   HeuristicCache
+            WHERE  Player = @player;";
 
             try
             {
@@ -29,6 +30,8 @@ namespace Isolation
                 using (var cmd = new MySqlCommand(query, conn))
                 {
                     conn.Open();
+
+                    cmd.Parameters.AddWithValue("player", myPlayer == Player.X);
 
                     using (var rdr = cmd.ExecuteReader())
                     {
@@ -52,12 +55,12 @@ namespace Isolation
             return heuristics;
         }
 
-        public void SaveHeuristicCache(IList<HeuristicDto> heuristics)
+        public void SaveHeuristicCache(IList<HeuristicDto> heuristics, Player myPlayer)
         {
             const string query = @"
             INSERT INTO HeuristicCache
-                (Board, Heuristic, Score) VALUES
-                (@board, @heuristic, @score)
+                (Player, Heuristic, Board, Score) VALUES
+                (@player, @heuristic, @board, @score)
             ON DUPLICATE KEY UPDATE
                 Score = @score;";
 
@@ -71,8 +74,9 @@ namespace Isolation
                     foreach (var heuristic in heuristics)
                     {
                         cmd.Parameters.Clear();
-                        cmd.Parameters.AddWithValue("board", heuristic.Board);
+                        cmd.Parameters.AddWithValue("player", myPlayer == Player.X);
                         cmd.Parameters.AddWithValue("heuristic", heuristic.Heuristic);
+                        cmd.Parameters.AddWithValue("board", heuristic.Board);
                         cmd.Parameters.AddWithValue("score", heuristic.Score);
 
                         cmd.ExecuteNonQuery();

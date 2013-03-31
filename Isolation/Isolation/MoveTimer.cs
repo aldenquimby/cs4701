@@ -18,7 +18,7 @@ namespace Isolation
         public MoveTimer()
         {
             _sw = new Stopwatch();
-            _timeout = TimeSpan.FromSeconds(10); // allow 10 seconds to calculate move
+            _timeout = TimeSpan.FromSeconds(50); // allowed time to calculate move
         }
 
         public void StartTimer()
@@ -26,14 +26,14 @@ namespace Isolation
             _sw.Restart();
         }
 
-        public TimeSpan GetTimeRemaining()
+        public TimeSpan GetTimeElapsed()
         {
-            return _timeout.Subtract(_sw.Elapsed);
+            return _sw.Elapsed;
         }
 
         public double GetPercentOfTimeRemaining()
         {
-            return ((double) (_timeout.Ticks - _sw.ElapsedTicks))/_timeout.Ticks;
+            return (_timeout.TotalMilliseconds - _sw.ElapsedMilliseconds) / _timeout.TotalMilliseconds;
         }
     }
 }

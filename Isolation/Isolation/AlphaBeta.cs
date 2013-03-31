@@ -16,62 +16,82 @@ namespace Isolation
             _timer = timer;
         }
 
+        private SearchConfig _config;
         private HeuristicBase _heuristic;
-        private int _numNodesGenerated;
+        private Dictionary<int, int> _nodesGeneratedByDepth;
+        private Dictionary<int, int> _nodesTimedOutByDepth;
         private int _numNodesAtDepthLimit;
+        private int _numNodesQuiessenceSearched;
 
-        public static bool ShouldAlphaBeta = true;
-        public static bool? ShouldOrderMovesDesc = true;
-
-        public BestMoveResult BestMove(Board board, int depthLimit, HeuristicBase heuristic)
+        public BestMoveResult BestMove(Board board, SearchConfig config, HeuristicBase heuristic)
         {
             // start timer
             _timer.StartTimer();
 
             // initialize stats
+            _config = config;
             _heuristic = heuristic;
-            _numNodesGenerated = 0;
+            _nodesGeneratedByDepth = Enumerable.Range(1, _config.DepthLimit).ToDictionary(x => x, x => 0);
+            _nodesTimedOutByDepth = Enumerable.Range(1, _config.DepthLimit).ToDictionary(x => x, x => 0);
             _numNodesAtDepthLimit = 0;
+            _numNodesQuiessenceSearched = 0;
 
-            var result = BestMove(board, depthLimit, int.MinValue, int.MaxValue);
+            var result = BestMoveInternal(board, _config.DepthLimit, int.MinValue, int.MaxValue);
             
             // fill stats
+            result.Config = _config;
             result.HeurisiticName = _heuristic.Name;
             result.NumNodesAtDepthLimit = _numNodesAtDepthLimit;
-            result.NumNodesGenerated = _numNodesGenerated;
-            
+            result.NodesGeneratedByDepth = _nodesGeneratedByDepth;
+            result.NumNodesQuiessenceSearched = _numNodesQuiessenceSearched;
+            result.NodesTimedOutByDepth = _nodesTimedOutByDepth;
+            result.PercentOfTimeRemaining = _timer.GetPercentOfTimeRemaining();
+            result.TotalSecondsElapsed = _timer.GetTimeElapsed().TotalSeconds;
+
             return result;
         }
 
-        private static int GetNumNodesTrimmed(Dictionary<int, int> cuttoffsByDepth, int branchingFactor)
+        private bool IsInterestingMove(Board originalBoard, Board newBoard)
         {
-            var result = 0;
-            foreach (var kvp in cuttoffsByDepth)
+            // if no quiessence search configured, nothing is interesting
+            if (_config.InterestingPercentScoreChange == null)
             {
-                var depthCutoff = kvp.Key - 1;
-                var numCuttoffs = kvp.Value;
-                var nodesTrimmedPerCutoff = (int)Math.Pow(branchingFactor, depthCutoff);
-                result += nodesTrimmedPerCutoff * numCuttoffs;
+                return false;
             }
-            return result;
+
+            // prevent indefinite quiessence search
+            if (_numNodesQuiessenceSearched > 5000)
+            {
+                return false;
+            }
+
+            var originalScore = _evaluator.Evaluate(originalBoard, _heuristic);
+            var newScore = _evaluator.Evaluate(newBoard, _heuristic);
+
+            // must go from negative to positive or positive to negative
+            if (!((originalScore > 0 && newScore < 0) || (originalScore < 0 && newScore > 0)))
+            {
+                return false;
+            }
+
+            var percent1 = ((double)(newScore - originalScore) / newScore);
+            var percent2 = ((double)(originalScore - newScore) / originalScore);
+
+            var cutoff = _config.InterestingPercentScoreChange.Value;
+
+            // must have large enough percent change
+            return (percent1 > cutoff || percent1 < -cutoff) ||
+                   (percent2 > cutoff || percent2 < -cutoff);
         }
 
-        // INITIAL CALL NEEDS: even depth, -inifinity alpha, infinity beta
-        private BestMoveResult BestMove(Board board, int depth, int alpha, int beta)
+        // INITIAL CALL NEEDS -inifinity alpha, infinity beta
+        private BestMoveResult BestMoveInternal(Board board, int depth, int alpha, int beta)
         {
             // if we reached the bottom, return
-            // TODO quiessence search here
             if (depth == 0)
             {
                 _numNodesAtDepthLimit++;
                 return new BestMoveResult(_evaluator.Evaluate(board, _heuristic), null);
-            }
-
-            // if we have less than 10% of time left, return
-            if (_timer.GetPercentOfTimeRemaining() < 0.1)
-            {
-                // Logger.Log("!!Timeout!!"); //TODO remove
-                // return new BestMoveResult(_evaluator.Evaluate(board, _heuristic), null);
             }
 
             var validMoves = board.GetValidMoves();
@@ -79,6 +99,7 @@ namespace Isolation
             // try to initialize bestMove to the first possible move, so it will be returned if it's the only move
             var bestMove = validMoves.Count > 0 ? validMoves.First() : null;
 
+            // generate new boards for each move
             var validMovesWithBoard = validMoves.Select(x =>
                 {
                     var boardCopy = board.Copy();
@@ -86,22 +107,45 @@ namespace Isolation
                     return new {move = x, board = boardCopy};
                 });
 
-            if (ShouldOrderMovesDesc == true)
+            // sort move list depending on configuration
+            if (_config.SortMovesAsc == true)
             {
                 validMovesWithBoard = validMovesWithBoard.OrderByDescending(x => _evaluator.Evaluate(x.board, _heuristic));
             }
-            else if (ShouldOrderMovesDesc == false)
+            else if (_config.SortMovesAsc == false)
             {
                 validMovesWithBoard = validMovesWithBoard.OrderBy(x => _evaluator.Evaluate(x.board, _heuristic));
             }
 
             var isMaxTurn = board.MyPlayer == board.PlayerToMove;
 
+            // TODO: multithread
+
             foreach (var move in validMovesWithBoard)
             {
-                _numNodesGenerated++;
+                _nodesGeneratedByDepth[depth]++;
 
-                var childResult = BestMove(move.board, depth - 1, alpha, beta);
+                BestMoveResult childResult;
+
+                // check quiessence search
+                if (IsInterestingMove(board, move.board))
+                {
+                    // extend search depth because this move looks interesting
+                    _numNodesQuiessenceSearched++;
+                    childResult = BestMoveInternal(move.board, depth, alpha, beta);
+                }
+                else
+                {
+                    // normal evaluation
+                    childResult = BestMoveInternal(move.board, depth - 1, alpha, beta);
+                }
+
+                // if we're near timeout, bail
+                if (_timer.GetPercentOfTimeRemaining() < _config.PercentTimeLeftForTimeout)
+                {
+                    _nodesTimedOutByDepth[depth]++;
+                    return new BestMoveResult(isMaxTurn ? alpha : beta, bestMove);
+                }
 
                 if (isMaxTurn) // if it's a max turn, we want to check alpha
                 {
@@ -111,7 +155,8 @@ namespace Isolation
                         bestMove = move.move;
                     }
 
-                    if (ShouldAlphaBeta && alpha >= beta)
+                    // alpha-beta trim
+                    if (_config.UseAlphaBeta && alpha >= beta)
                     {
                         return new BestMoveResult(alpha, bestMove);
                     }
@@ -124,7 +169,8 @@ namespace Isolation
                         bestMove = move.move;
                     }
 
-                    if (ShouldAlphaBeta && alpha >= beta)
+                    // alpha-beta trim
+                    if (_config.UseAlphaBeta && alpha >= beta)
                     {
                         return new BestMoveResult(beta, bestMove);
                     }
@@ -139,24 +185,49 @@ namespace Isolation
     {
         public BestMoveResult(int score, BoardSpace bestMove)
         {
-            Score = score;
             Move = bestMove;
+            Score = score;
+            NodesGeneratedByDepth = new Dictionary<int, int>();
+            NodesTimedOutByDepth = new Dictionary<int, int>();
         }
 
-        public int Score { get; set; }
         public BoardSpace Move { get; set; }
-        public int NumNodesGenerated { get; set; }
+        public int Score { get; set; }
+        
+        public SearchConfig Config { get; set; }
+        public IDictionary<int, int> NodesGeneratedByDepth { get; set; }
+        public IDictionary<int, int> NodesTimedOutByDepth { get; set; }
         public int NumNodesAtDepthLimit { get; set; }
+        public int NumNodesQuiessenceSearched { get; set; }
         public string HeurisiticName { get; set; }
+        public double TotalSecondsElapsed { get; set; }
+        public double PercentOfTimeRemaining { get; set; }
 
         public override string ToString()
         {
+            Func<IDictionary<int, int>, string> printByDepth =
+                byDepth =>
+                    {
+                        var total = byDepth.Sum(x => x.Value);
+                        if (total == 0)
+                        {
+                            return "0";
+                        }
+                        return total + " => " + string.Join(", ", byDepth.OrderByDescending(x => x.Key).Select(x => x.Key + "-" + x.Value));
+                    };
+
             var builder = new StringBuilder();
             builder.AppendLine("Move: " + Move);
             builder.AppendLine("Score: " + Score);
             builder.AppendLine("Heuristic: " + HeurisiticName);
-            builder.AppendLine("Nodes Generated: " + NumNodesGenerated);
+            builder.AppendLine("Move Sorting: " + (Config.SortMovesAsc == null ? "none" : Config.SortMovesAsc.Value ? "ASC" : "DSC"));
+            builder.AppendLine("Depth Limit: " + Config.DepthLimit);
+            builder.AppendLine("Time Taken (s): " + TotalSecondsElapsed);
+            builder.AppendLine("Time Left (%): " + PercentOfTimeRemaining*100);
+            builder.AppendLine("Node Generation: " + printByDepth(NodesGeneratedByDepth));
+            builder.AppendLine("Node Timeouts: " + printByDepth(NodesTimedOutByDepth));
             builder.AppendLine("Depth Limit Nodes: " + NumNodesAtDepthLimit);
+            builder.AppendLine("Quiessence Nodes: " + NumNodesQuiessenceSearched);
             return builder.ToString();
         }
     }
