@@ -38,6 +38,7 @@
     <Compile Include="AlphaBeta.cs" />
     <Compile Include="Board.cs" />
     <Compile Include="BoardSpace.cs" />
+    <Compile Include="ClientConfig.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="GameRunner.cs" />
     <Compile Include="Heuristics.cs" />

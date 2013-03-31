@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 
 namespace Isolation
 {
@@ -71,15 +69,7 @@ namespace Isolation
             {
                 _cache[heuristic][board] = heuristic.Evaluate(board);
             }
-            else
-            {
-                var matched = _cache[heuristic].Where(x => x.Key.Equals(board)).ToList();
-                if (matched.Count > 1)
-                {
-                    Logger.Log("Wtf!");
-                }
-            }
-
+        
             return _cache[heuristic][board];
         }
 

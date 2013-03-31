@@ -7,120 +7,137 @@ namespace Server
 {
     public class Program
     {
-        private static Process StartClient()
-        {
-            var p = new Process
-                {
-                    StartInfo = new ProcessStartInfo
-                        {
-                            CreateNoWindow = true,
-                            FileName = @"C:\src\columbia\cs4701\Isolation\Isolation\bin\Debug\Isolation.exe",
-                            RedirectStandardInput = true,
-                            RedirectStandardOutput = true,
-                            UseShellExecute = false,
-                        },
-                };
-            p.Start();
-            return p;
-        }
-
         private static bool AskContinue()
         {
-            Console.WriteLine("[SERVER] Continue game (Y/N)?");
+            Console.WriteLine("\nContinue game (Q to quit)?");
             var response = Console.ReadLine();
-            return !"N".Equals(response, StringComparison.OrdinalIgnoreCase);
+            return !"Q".Equals(response, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void InitializeClient(StreamReader clientOut, StreamWriter clientIn, string player)
+        {
+            Logger.ServerLog(string.Format("Enter player {0} config: ", player));
+            var config = Console.ReadLine();
+            Logger.ServerLog(string.Format("Player {0} config: {1}", player, config));
+
+            clientOut.ReadLine();
+            clientIn.WriteLine(player);
+            clientOut.ReadLine();
+            clientIn.WriteLine(config);
         }
 
         private static void PrintBoard(Board board)
         {
-            Console.WriteLine("*****************");
-            Console.WriteLine(board.ToString());
-            Console.WriteLine("*****************");
-            Console.WriteLine();
+            Logger.Log("\n" +
+                       "*****************\n" +
+                       board + "\n" +
+                       "*****************");
         }
 
-        private static BoardSpace GetMoveFromClient(StreamReader clientOut)
+        private static BoardSpace GetMoveFromClient(StreamReader clientOut, string player)
         {
-            Console.WriteLine("[SERVER] getting next move from client...");
+            Logger.ServerLog("Getting next move from client...");
             
             var move = clientOut.ReadLine();
             while (!"My move:".Equals(move))
             {
+                if (move != null && (move.StartsWith("I win") || move.StartsWith("I lose")))
+                {
+                    Logger.ServerLog(string.Format("Game over! Player {0} says: {1}", player, move));
+                    return null;
+                }
+
+                Logger.ClientLog(player, move);
                 move = clientOut.ReadLine();
             }
 
             move = clientOut.ReadLine();
+
+            Logger.ServerLog(player + " moves " + move);
             
             return new BoardSpace(move);
         }
 
-        //"I win :)." : "I lose :(."
-
-        private static void SendMoveToClient(StreamReader clientOut, StreamWriter clientIn, BoardSpace move)
+        private static void SendMoveToClient(StreamReader clientOut, StreamWriter clientIn, BoardSpace move, string player)
         {
             var wait = clientOut.ReadLine();
             while (!"Enter opponent move (row col):".Equals(wait))
             {
+                Logger.ClientLog(player, wait);
                 wait = clientOut.ReadLine();
             }
 
             clientIn.WriteLine(move.ToString());
         }
 
-        public static void Main(string[] args)
+        private static void PlayGame(Process client1, Process client2)
         {
-            var board = Board.ConstructInitialBoard(Player.X);
+            Logger.ServerLog("Starting game.");
 
-            var client1 = StartClient();
-            var client2 = StartClient();
+            var board = Board.ConstructInitialBoard(Player.X);
 
             using (var xIn = client1.StandardInput)
             using (var xOut = client1.StandardOutput)
             using (var oIn = client2.StandardInput)
             using (var oOut = client2.StandardOutput)
             {
-                // initialize client 1 to X
-                Console.WriteLine("[SERVER] Client 1 init.");
-                xOut.ReadLine();
-                xIn.WriteLine("X");
+                InitializeClient(xOut, xIn, "X");
+                InitializeClient(oOut, oIn, "O");
 
-                // initialize client 2 to O
-                Console.WriteLine("[SERVER] Client 2 init.");
-                oOut.ReadLine();
-                oIn.WriteLine("O");
+                PrintBoard(board);
 
                 while (true)
                 {
-                    if (!AskContinue())
-                    {
-                        break;
-                    }
+                    if (!AskContinue()) { break; } // user quit
 
-                    PrintBoard(board);
-
-                    var xMove = GetMoveFromClient(xOut);
-                    SendMoveToClient(oOut, oIn, xMove);
-
-                    Console.WriteLine("[SERVER] X moves " + xMove);
+                    var xMove = GetMoveFromClient(xOut, "X");
+                    if (xMove == null) { break; } // game over
+                    SendMoveToClient(oOut, oIn, xMove, "X");
                     board.Move(xMove);
 
-                    if (!AskContinue())
-                    {
-                        break;
-                    }
-
                     PrintBoard(board);
 
-                    var oMove = GetMoveFromClient(oOut);
-                    SendMoveToClient(xOut, xIn, oMove);
-
-                    Console.WriteLine("[SERVER] O moves " + oMove);
+                    var oMove = GetMoveFromClient(oOut, "O");
+                    if (oMove == null) { break; } // game over
+                    SendMoveToClient(xOut, xIn, oMove, "O");
                     board.Move(oMove);
+
+                    PrintBoard(board);
                 }
             }
+        }
 
-            client1.Kill();
-            client2.Kill();
+        private static Process StartClient()
+        {
+            return Process.Start(new ProcessStartInfo
+            {
+                CreateNoWindow = true,
+                FileName = @"C:\src\columbia\cs4701\Isolation\Isolation\bin\Debug\Isolation.exe",
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+            });
+        }
+
+        public static void Main(string[] args)
+        {
+            var client1 = StartClient();
+            var client2 = StartClient();
+
+            try
+            {
+                PlayGame(client1, client2);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                Console.ReadKey();
+            }
+            finally
+            {
+                client1.Kill();
+                client2.Kill();
+            }
         }
     }
 }

@@ -69,22 +69,6 @@ namespace Isolation
             return board;
         }
 
-        #region win/lose/forfeit
-
-        public Player? Winner { get; private set; }
-
-        public void Forfeit()
-        {
-            Winner = MyPlayer == Player.X ? Player.O : Player.X;
-        }
-
-        public void ForfeitOpponent()
-        {
-            Winner = MyPlayer;
-        }
-
-        #endregion
-
         #region perform move
 
         public void Move(BoardSpace move)
