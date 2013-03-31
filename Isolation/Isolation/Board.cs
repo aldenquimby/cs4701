@@ -20,19 +20,24 @@ namespace Isolation
             get { return _board[row, col]; }
         }
 
-        private Board(Player myPlayer)
+        public void Initialize(Player myPlayer)
         {
             MyPlayer = myPlayer;
+        }
+        
+        private Board()
+        {
             _board = new BoardSpaceValue[8, 8];
         }
 
         public static Board ConstructInitialBoard(Player myPlayer)
         {
-            var board = new Board(myPlayer)
+            var board = new Board
             {
                 Xposition = new BoardSpace(0, 0),
                 Oposition = new BoardSpace(7, 7),
                 PlayerToMove = Player.X,
+                MyPlayer = myPlayer,
             };
 
             for (byte i = 0; i < 8; i++)
@@ -51,11 +56,12 @@ namespace Isolation
 
         public Board Copy()
         {
-            var board = new Board(MyPlayer)
+            var board = new Board
             {
                 Xposition = Xposition,
                 Oposition = Oposition,
                 PlayerToMove = PlayerToMove,
+                MyPlayer = MyPlayer,
             };
 
             for (byte i = 0; i < 8; i++)
@@ -304,10 +310,9 @@ namespace Isolation
             }
         }
 
-        //TODO: remove this constructor
-        public Board(IList<string> boardRows, Player myPlayer) : this(myPlayer)
+        public Board(string flatBoard) : this()
         {
-            if (boardRows.Count != 8)
+            if (flatBoard.Length != 64)
             {
                 throw new ArgumentException("Invalid board.");
             }
@@ -316,16 +321,9 @@ namespace Isolation
 
             for (byte i = 0; i < 8; i++)
             {
-                var row = boardRows[i];
-
-                if (row.Length != 8)
-                {
-                    throw new ArgumentException("Invalid board.");
-                }
-
                 for (byte j = 0; j < 8; j++)
                 {
-                    var space = GetSpaceFromChar(row[j]);
+                    var space = GetSpaceFromChar(flatBoard[i*7 + j]);
                     _board[i, j] = space;
 
                     if (space == BoardSpaceValue.PlayerX)
@@ -346,14 +344,27 @@ namespace Isolation
             PlayerToMove = totalMoves % 2 == 0 ? Player.X : Player.O;
         }
 
+        public string ToFlatString()
+        {
+            var builder = new StringBuilder();
+            for (var i = 0; i < 8; i++)
+            {
+                for (var j = 0; j < 8; j++)
+                {
+                    builder.Append(GetCharFromSpace(_board[i, j]));
+                }
+            }
+            return builder.ToString();
+        }
+
         public override string ToString()
         {
             var builder = new StringBuilder();
             builder.AppendLine("  1 2 3 4 5 6 7 8"); //TODO remove
-            for (byte i = 0; i < 8; i++)
+            for (var i = 0; i < 8; i++)
             {
                 builder.Append(i + 1).Append(" "); //TODO remove
-                for (byte j = 0; j < 8; j++)
+                for (var j = 0; j < 8; j++)
                 {
                     builder.Append(GetCharFromSpace(_board[i, j])).Append(" ");
                 }

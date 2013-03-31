@@ -13,6 +13,13 @@ namespace Isolation
             // get configuration (depth limit, quiesence search, etc)
             var config = GetConfig();
 
+            // load up heuristic cache from db
+            if (config.UseDatabaseHeuristicCache)
+            {
+                var heuristics = HeuristicSql.I.GetHeuristicCache();
+                HeuristicCache.I.LoadCache(heuristics);
+            }
+
             // get the initial board
             var board = Board.ConstructInitialBoard(myPlayer);
 
@@ -45,6 +52,13 @@ namespace Isolation
                         break;
                     }
                 }
+            }
+
+            // save heuristic cache to db
+            if (config.UseDatabaseHeuristicCache)
+            {
+                var heuristics = HeuristicCache.I.DumpCache();
+                HeuristicSql.I.SaveHeuristicCache(heuristics);
             }
         
             Console.ReadKey();

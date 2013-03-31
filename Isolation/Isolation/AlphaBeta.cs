@@ -25,6 +25,9 @@ namespace Isolation
 
         public BestMoveResult BestMove(Board board, int depthLimit, HeuristicBase heuristic)
         {
+            // start timer
+            _timer.StartTimer();
+
             // initialize stats
             _heuristic = heuristic;
             _numNodesGenerated = 0;

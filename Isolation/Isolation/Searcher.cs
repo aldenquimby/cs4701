@@ -11,40 +11,26 @@ namespace Isolation
 
         #endregion
 
-        private readonly AlphaBeta _alphaBeta;
-        private readonly MoveTimer _timer;
-        private readonly HeuristicCache _evaluator;
-
-        public Searcher()
-        {
-            _timer = MoveTimer.I;
-            _evaluator = HeuristicCache.I;
-
-            _alphaBeta = new AlphaBeta(_evaluator, _timer);
-        }
+        private readonly AlphaBeta _alphaBeta = new AlphaBeta(HeuristicCache.I, MoveTimer.I);
 
         public BoardSpace GetMyNextMove(Board board)
         {
-            const int depthLimit = 3;
+            const int depthLimit = 5;
 
-            _timer.StartTimer();
             var bestMove = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
-            Console.WriteLine("\nDESCENDING\n{0}Time remaining: {1} ms\n", bestMove, _timer.GetTimeRemaining().TotalMilliseconds);
+            Console.WriteLine("\nDESCENDING\n{0}Time remaining: {1} ms\n", bestMove, MoveTimer.I.GetTimeRemaining().TotalMilliseconds);
 
-            //_timer.StartTimer();
             //AlphaBeta.ShouldOrderMovesDesc = false;
             //var sortedBackwards = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
-            //Logger.Log(string.Format("\nASCENDING\n{0}Time remaining: {1} ms\n", sortedBackwards, _timer.GetTimeRemaining().TotalMilliseconds));
+            //Logger.Log(string.Format("\nASCENDING\n{0}Time remaining: {1} ms\n", sortedBackwards, MoveTimer.I.GetTimeRemaining().TotalMilliseconds));
 
-            //_timer.StartTimer();
             //AlphaBeta.ShouldOrderMovesDesc = null;
             //var unsorted = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
-            //Logger.Log(string.Format("\nNO ORDER\n{0}Time remaining: {1} ms\n", unsorted, _timer.GetTimeRemaining().TotalMilliseconds));
+            //Logger.Log(string.Format("\nNO ORDER\n{0}Time remaining: {1} ms\n", unsorted, MoveTimer.I.GetTimeRemaining().TotalMilliseconds));
 
-            //_timer.StartTimer();
             //AlphaBeta.ShouldAlphaBeta = false;
             //var minimax = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
-            //Logger.Log(string.Format("\nMINIMAX\n{0}Time remaining: {1} ms\n", minimax, _timer.GetTimeRemaining().TotalMilliseconds));
+            //Logger.Log(string.Format("\nMINIMAX\n{0}Time remaining: {1} ms\n", minimax, MoveTimer.I.GetTimeRemaining().TotalMilliseconds));
 
             return bestMove.Move;
         }

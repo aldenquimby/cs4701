@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Isolation
 {
@@ -8,24 +9,6 @@ namespace Isolation
     {
         public abstract int Evaluate(Board board);
         public abstract string Name { get; }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj))
-            {
-                return false;
-            }
-            if (ReferenceEquals(this, obj))
-            {
-                return true;
-            }
-            return string.Equals(Name, ((HeuristicBase) obj).Name);
-        }
-
-        public override int GetHashCode()
-        {
-            return 17 ^ Name.GetHashCode();
-        }
     }
     
     // Number possible moves for me, minus number possible moves for opponent
@@ -39,9 +22,7 @@ namespace Isolation
         public override string Name { get { return "NumberOfMoves"; } }
     }
 
-    /// <summary>
-    /// Global static heuristic evaluator
-    /// </summary>
+    // Global static heuristic evaluator
     public class HeuristicCache
     {
         #region singleton
@@ -51,36 +32,62 @@ namespace Isolation
 
         #endregion
 
-        private readonly Dictionary<HeuristicBase, Dictionary<Board, int>> _cache;
+        private readonly Dictionary<string, Dictionary<Board, int>> _cache;
 
         public HeuristicCache()
         {
-            _cache = new Dictionary<HeuristicBase, Dictionary<Board, int>>();
+            _cache = new Dictionary<string, Dictionary<Board, int>>();
         }
 
         public int Evaluate(Board board, HeuristicBase heuristic)
         {
-            if (!_cache.ContainsKey(heuristic))
+            if (board == null || heuristic == null)
             {
-                _cache[heuristic] = new Dictionary<Board, int>();
+                return 0;
             }
 
-            if (!_cache[heuristic].ContainsKey(board))
+            if (!_cache.ContainsKey(heuristic.Name))
             {
-                _cache[heuristic][board] = heuristic.Evaluate(board);
+                _cache[heuristic.Name] = new Dictionary<Board, int>();
             }
-        
-            return _cache[heuristic][board];
+
+            if (!_cache[heuristic.Name].ContainsKey(board))
+            {
+                _cache[heuristic.Name][board] = heuristic.Evaluate(board);
+            }
+
+            return _cache[heuristic.Name][board];
         }
 
-        public void LoadCacheFromDb()
+        public void LoadCache(IList<HeuristicDto> dtos)
         {
-            throw new NotImplementedException();
+            _cache.Clear();
+
+            foreach (var dto in dtos)
+            {
+                var board = new Board(dto.Board);
+
+                if (!_cache.ContainsKey(dto.Heuristic))
+                {
+                    _cache[dto.Heuristic] = new Dictionary<Board, int>();
+                }
+
+                _cache[dto.Heuristic][board] = dto.Score;
+            }
         }
 
-        public void DumpCacheToDb()
+        public IList<HeuristicDto> DumpCache()
         {
-            throw new NotImplementedException();
+            var heuristics = _cache.SelectMany(heuristic => heuristic.Value, (heuristic, board) => new HeuristicDto
+                {
+                    Heuristic = heuristic.Key,
+                    Score = board.Value,
+                    Board = board.Key.ToFlatString(),
+                }).ToList();
+
+            _cache.Clear();
+
+            return heuristics;
         }
     }
 }

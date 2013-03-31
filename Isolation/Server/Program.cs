@@ -127,6 +127,8 @@ namespace Server
             try
             {
                 PlayGame(client1, client2);
+                Console.WriteLine("DONE");
+                Console.ReadKey();
             }
             catch (Exception e)
             {

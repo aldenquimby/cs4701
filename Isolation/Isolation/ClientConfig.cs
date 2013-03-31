@@ -4,7 +4,9 @@
     {
         public ClientConfig(string input)
         {
-            
+            UseDatabaseHeuristicCache = true;
         }
+
+        public bool UseDatabaseHeuristicCache { get; set; }
     }
 }

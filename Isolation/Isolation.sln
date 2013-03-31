@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Isolation", "Isolation\Isolation.csproj", "{BBDAFBB5-7C35-4880-A69D-FEA5D5331FF7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Search", "Search\Search.csproj", "{806F2EEC-E8AA-4D70-94B2-013DD0F46DA6}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Server", "Server\Server.csproj", "{7136F502-BC94-45C3-99D1-B83250F3FFCC}"
 EndProject
 Global
@@ -17,10 +15,6 @@ Global
 		{BBDAFBB5-7C35-4880-A69D-FEA5D5331FF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBDAFBB5-7C35-4880-A69D-FEA5D5331FF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBDAFBB5-7C35-4880-A69D-FEA5D5331FF7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{806F2EEC-E8AA-4D70-94B2-013DD0F46DA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{806F2EEC-E8AA-4D70-94B2-013DD0F46DA6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{806F2EEC-E8AA-4D70-94B2-013DD0F46DA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{806F2EEC-E8AA-4D70-94B2-013DD0F46DA6}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7136F502-BC94-45C3-99D1-B83250F3FFCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7136F502-BC94-45C3-99D1-B83250F3FFCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7136F502-BC94-45C3-99D1-B83250F3FFCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
