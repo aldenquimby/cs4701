@@ -14,13 +14,15 @@
             PercentTimeLeftToIncrementDepthLimit = 0.95;
             ReportStatistics = true;
             NumberOfThreads = 4;
-            InterestingPercentScoreChange = 1.75;
+            InterestingPercentScoreChange = 1.85;
+            Heuristic = new NumberOfMovesHeuristic();
 
             // from input
-            int depthLimit;
-            if (int.TryParse(input, out depthLimit))
+            if ("1".Equals(input))
             {
-                DepthLimit = depthLimit;
+                DepthLimit = 1;
+                PercentTimeLeftToIncrementDepthLimit = 0.98;
+                SortMovesAsc = true;
             }
         }
 
@@ -53,5 +55,11 @@
 
         // quiessence search: extend depth if score changes by more than this percent, null for no quiessence
         public double? InterestingPercentScoreChange { get; set; }
+
+        // heuristic evaluator to use when searching
+        public HeuristicBase Heuristic { get; set; }
+
+        // max number of nodes to quiessence expand
+        public int MaxQuiessenceNodes { get; set; }
     }
 }

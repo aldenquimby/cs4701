@@ -17,20 +17,18 @@ namespace Isolation
         }
 
         private SearchConfig _config;
-        private HeuristicBase _heuristic;
         private Dictionary<int, int> _nodesGeneratedByDepth;
         private Dictionary<int, int> _nodesTimedOutByDepth;
         private int _numNodesAtDepthLimit;
         private int _numNodesQuiessenceSearched;
 
-        public BestMoveResult BestMove(Board board, SearchConfig config, HeuristicBase heuristic)
+        public BestMoveResult BestMove(Board board, SearchConfig config)
         {
             // start timer
             _timer.StartTimer();
 
             // initialize stats
             _config = config;
-            _heuristic = heuristic;
             _nodesGeneratedByDepth = Enumerable.Range(1, _config.DepthLimit).ToDictionary(x => x, x => 0);
             _nodesTimedOutByDepth = Enumerable.Range(1, _config.DepthLimit).ToDictionary(x => x, x => 0);
             _numNodesAtDepthLimit = 0;
@@ -40,7 +38,6 @@ namespace Isolation
             
             // fill stats
             result.Config = _config;
-            result.HeurisiticName = _heuristic.Name;
             result.NumNodesAtDepthLimit = _numNodesAtDepthLimit;
             result.NodesGeneratedByDepth = _nodesGeneratedByDepth;
             result.NumNodesQuiessenceSearched = _numNodesQuiessenceSearched;
@@ -60,13 +57,13 @@ namespace Isolation
             }
 
             // prevent indefinite quiessence search
-            if (_numNodesQuiessenceSearched > 5000)
+            if (_numNodesQuiessenceSearched > _config.MaxQuiessenceNodes)
             {
                 return false;
             }
 
-            var originalScore = _evaluator.Evaluate(originalBoard, _heuristic);
-            var newScore = _evaluator.Evaluate(newBoard, _heuristic);
+            var originalScore = _evaluator.Evaluate(originalBoard, _config.Heuristic);
+            var newScore = _evaluator.Evaluate(newBoard, _config.Heuristic);
 
             // must go from negative to positive or positive to negative
             if (!((originalScore > 0 && newScore < 0) || (originalScore < 0 && newScore > 0)))
@@ -91,7 +88,7 @@ namespace Isolation
             if (depth == 0)
             {
                 _numNodesAtDepthLimit++;
-                return new BestMoveResult(_evaluator.Evaluate(board, _heuristic), null);
+                return new BestMoveResult(_evaluator.Evaluate(board, _config.Heuristic), null);
             }
 
             var validMoves = board.GetValidMoves();
@@ -110,11 +107,11 @@ namespace Isolation
             // sort move list depending on configuration
             if (_config.SortMovesAsc == true)
             {
-                validMovesWithBoard = validMovesWithBoard.OrderByDescending(x => _evaluator.Evaluate(x.board, _heuristic));
+                validMovesWithBoard = validMovesWithBoard.OrderByDescending(x => _evaluator.Evaluate(x.board, _config.Heuristic));
             }
             else if (_config.SortMovesAsc == false)
             {
-                validMovesWithBoard = validMovesWithBoard.OrderBy(x => _evaluator.Evaluate(x.board, _heuristic));
+                validMovesWithBoard = validMovesWithBoard.OrderBy(x => _evaluator.Evaluate(x.board, _config.Heuristic));
             }
 
             var isMaxTurn = board.MyPlayer == board.PlayerToMove;
@@ -199,7 +196,6 @@ namespace Isolation
         public IDictionary<int, int> NodesTimedOutByDepth { get; set; }
         public int NumNodesAtDepthLimit { get; set; }
         public int NumNodesQuiessenceSearched { get; set; }
-        public string HeurisiticName { get; set; }
         public double TotalSecondsElapsed { get; set; }
         public double PercentOfTimeRemaining { get; set; }
 
@@ -219,7 +215,7 @@ namespace Isolation
             var builder = new StringBuilder();
             builder.AppendLine("Move: " + Move);
             builder.AppendLine("Score: " + Score);
-            builder.AppendLine("Heuristic: " + HeurisiticName);
+            builder.AppendLine("Heuristic: " + Config.Heuristic.Name);
             builder.AppendLine("Move Sorting: " + (Config.SortMovesAsc == null ? "none" : Config.SortMovesAsc.Value ? "ASC" : "DSC"));
             builder.AppendLine("Depth Limit: " + Config.DepthLimit);
             builder.AppendLine("Time Taken (s): " + TotalSecondsElapsed);

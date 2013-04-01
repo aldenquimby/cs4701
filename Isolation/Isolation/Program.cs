@@ -42,102 +42,98 @@ namespace Isolation
         //    Console.ReadKey();
         //}
 
-        private static IEnumerable<BoardSpace> GetSurroundingSpaces(BoardSpace space)
-        {
-            if (space.Row > 0)
-            {
-                yield return new BoardSpace((byte)(space.Row - 1), space.Col);
+        //private static IEnumerable<BoardSpace> GetSurroundingSpaces(BoardSpace space)
+        //{
+        //    if (space.Row > 0)
+        //    {
+        //        yield return new BoardSpace((byte)(space.Row - 1), space.Col);
 
-                if (space.Col > 0)
-                {
-                    yield return new BoardSpace((byte)(space.Row - 1), (byte)(space.Col - 1));
-                    yield return new BoardSpace(space.Row, (byte)(space.Col - 1));
-                }
-                if (space.Col < 7)
-                {
-                    yield return new BoardSpace((byte)(space.Row - 1), (byte)(space.Col + 1));
-                    yield return new BoardSpace(space.Row, (byte)(space.Col + 1));
-                }
-            }
-            if (space.Row < 7)
-            {
-                yield return new BoardSpace((byte)(space.Row + 1), space.Col);
+        //        if (space.Col > 0)
+        //        {
+        //            yield return new BoardSpace((byte)(space.Row - 1), (byte)(space.Col - 1));
+        //            yield return new BoardSpace(space.Row, (byte)(space.Col - 1));
+        //        }
+        //        if (space.Col < 7)
+        //        {
+        //            yield return new BoardSpace((byte)(space.Row - 1), (byte)(space.Col + 1));
+        //            yield return new BoardSpace(space.Row, (byte)(space.Col + 1));
+        //        }
+        //    }
+        //    if (space.Row < 7)
+        //    {
+        //        yield return new BoardSpace((byte)(space.Row + 1), space.Col);
 
-                if (space.Col > 0)
-                {
-                    yield return new BoardSpace((byte)(space.Row + 1), (byte)(space.Col - 1));
-                }
-                if (space.Col < 7)
-                {
-                    yield return new BoardSpace((byte)(space.Row + 1), (byte)(space.Col + 1));
-                }
-            }
-        } 
+        //        if (space.Col > 0)
+        //        {
+        //            yield return new BoardSpace((byte)(space.Row + 1), (byte)(space.Col - 1));
+        //        }
+        //        if (space.Col < 7)
+        //        {
+        //            yield return new BoardSpace((byte)(space.Row + 1), (byte)(space.Col + 1));
+        //        }
+        //    }
+        //} 
 
-        private static HashSet<BoardSpace> GetOpenArea(Board board, Player player)
-        {
-            var initialPosition = player == Player.X ? board.Xposition : board.Oposition;
+        //private static HashSet<BoardSpace> GetOpenArea(Board board, Player player)
+        //{
+        //    var initialPosition = player == Player.X ? board.Xposition : board.Oposition;
 
-            var toExamine = new Queue<BoardSpace>(new[] { initialPosition });
-            var closed = new HashSet<BoardSpace> { initialPosition };
-            var accessible = new HashSet<BoardSpace>();
+        //    var toExamine = new Queue<BoardSpace>(new[] { initialPosition });
+        //    var closed = new HashSet<BoardSpace> { initialPosition };
+        //    var accessible = new HashSet<BoardSpace>();
 
-            while (toExamine.Count > 0)
-            {
-                var space = toExamine.Dequeue();
+        //    while (toExamine.Count > 0)
+        //    {
+        //        var space = toExamine.Dequeue();
 
-                // enqueue empty spaces immediately next to this space
-                foreach (var successor in GetSurroundingSpaces(space))
-                {
-                    // skip spaces we've seen
-                    if (closed.Contains(successor))
-                    {
-                        continue;
-                    }
+        //        // enqueue empty spaces immediately next to this space
+        //        foreach (var successor in GetSurroundingSpaces(space))
+        //        {
+        //            // skip spaces we've seen
+        //            if (closed.Contains(successor))
+        //            {
+        //                continue;
+        //            }
 
-                    // mark this sapce as seen
-                    closed.Add(successor);
+        //            // mark this sapce as seen
+        //            closed.Add(successor);
 
-                    if (board[successor.Row, successor.Col] == BoardSpaceValue.Empty)
-                    {
-                        accessible.Add(successor);
-                        toExamine.Enqueue(successor);
-                    }
-                }
-            }
+        //            if (board[successor.Row, successor.Col] == BoardSpaceValue.Empty)
+        //            {
+        //                accessible.Add(successor);
+        //                toExamine.Enqueue(successor);
+        //            }
+        //        }
+        //    }
 
-            return accessible;
-        }
+        //    return accessible;
+        //}
         
-        private static void TestOpenArea()
-        {
-            var board1 = new Board("********-**-*--o--**-********--*----*-x------*--*****--*-------*", Player.X);
-            var board2 = new Board("******-*-**----**-**-***---**x------*--***---*-----o**-*-------*", Player.X);
+        //private static void TestOpenArea()
+        //{
+        //    var board1 = new Board("********-**-*--o--**-********--*----*-x------*--*****--*-------*", Player.X);
+        //    var board2 = new Board("******-*-**----**-**-***---**x------*--***---*-----o**-*-------*", Player.X);
             
-            TestBoard(board1);
-            Console.ReadKey();
-            TestBoard(board2);
-        }
+        //    TestBoard(board1);
+        //    Console.ReadKey();
+        //    TestBoard(board2);
+        //}
 
-        private static void TestBoard(Board b)
-        {
-            Console.WriteLine(b);
-            foreach (var open in GetOpenArea(b, Player.X))
-            {
-                Console.WriteLine("X: " + open);
-            }
-            foreach (var open in GetOpenArea(b, Player.O))
-            {
-                Console.WriteLine("O: " + open);
-            }
-        }
+        //private static void TestBoard(Board b)
+        //{
+        //    Console.WriteLine(b);
+        //    foreach (var open in GetOpenArea(b, Player.X))
+        //    {
+        //        Console.WriteLine("X: " + open);
+        //    }
+        //    foreach (var open in GetOpenArea(b, Player.O))
+        //    {
+        //        Console.WriteLine("O: " + open);
+        //    }
+        //}
 
         public static void Main(string[] args)
         {
-            TestOpenArea();
-            Console.ReadKey();
-            return;
-
             try
             {
                 GameRunner.KickoffNewGame();

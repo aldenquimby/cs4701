@@ -11,7 +11,7 @@ namespace Isolation
         public abstract string Name { get; }
     }
     
-    // Number possible moves for me, minus number possible moves for opponent
+    // Number possible moves for me vs. opponent
     public class NumberOfMovesHeuristic : HeuristicBase
     {
         public override int Evaluate(Board board)
@@ -36,6 +36,7 @@ namespace Isolation
         public override string Name { get { return "NumberOfMoves"; } }
     }
 
+    // Number of empty spaces reachable by me vs. opponent
     public class OpenAreaHeuristic : HeuristicBase
     {
         private IEnumerable<BoardSpace> GetSurroundingSpaces(BoardSpace space)
@@ -196,7 +197,7 @@ namespace Isolation
                     Heuristic = heuristic.Key,
                     Score = board.Value,
                     Board = board.Key,
-                }).ToList();
+                }).OrderByDescending(x => x.Heuristic).ToList();
 
             _cache.Clear();
 

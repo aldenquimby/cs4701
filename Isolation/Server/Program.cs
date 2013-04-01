@@ -125,8 +125,6 @@ namespace Server
                     PrintBoard(board);
                 }
             }
-
-            Logger.ServerLog("Game over.");
         }
 
         private static Process StartClient()

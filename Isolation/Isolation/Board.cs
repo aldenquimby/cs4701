@@ -134,7 +134,7 @@ namespace Isolation
                 Oposition = move;
                 PlayerToMove = Player.X;
             }
-            EmptySpacesRemaining++;
+            EmptySpacesRemaining--;
         }
 
         #endregion

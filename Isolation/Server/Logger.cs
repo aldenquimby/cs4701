@@ -13,7 +13,7 @@ namespace Server
 
             using (var file = new StreamWriter(FilePath, true))
             {
-                file.WriteLine("{0} {1}", DateTime.Now.ToString("HH:mm"), msg);
+                file.WriteLine("{0} {1}", DateTime.Now.ToString("HH:mm:ss"), msg);
             }
         }
 
@@ -23,7 +23,7 @@ namespace Server
 
             using (var file = new StreamWriter(FilePath, true))
             {
-                file.WriteLine("{0} [SERVER] {1}", DateTime.Now.ToString("HH:mm"), msg);
+                file.WriteLine("{0} [SERVER] {1}", DateTime.Now.ToString("HH:mm:ss"), msg);
             }
         }
 
@@ -31,7 +31,7 @@ namespace Server
         {
             using (var file = new StreamWriter(FilePath, true))
             {
-                file.WriteLine("{0} [CLIENT {1}] {2}", DateTime.Now.ToString("HH:mm"), player, msg);
+                file.WriteLine("{0} [CLIENT {1}] {2}", DateTime.Now.ToString("HH:mm:ss"), player, msg);
             }
         }
     }

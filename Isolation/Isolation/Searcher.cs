@@ -22,7 +22,9 @@ namespace Isolation
 
         public BoardSpace GetMyNextMove(Board board)
         {
-            var bestMove = _alphaBeta.BestMove(board, _config, new NumberOfMovesHeuristic());
+            _config.MaxQuiessenceNodes = 1000*_config.DepthLimit;
+
+            var bestMove = _alphaBeta.BestMove(board, _config);
 
             if (_config.ReportStatistics)
             {
@@ -41,17 +43,11 @@ namespace Isolation
                 _config.DepthLimit--;
             }
 
-            //AlphaBeta.ShouldOrderMovesDesc = false;
-            //var sortedBackwards = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
-            //Logger.Log(string.Format("\nASCENDING\n{0}Time remaining: {1} ms\n", sortedBackwards, MoveTimer.I.GetTimeRemaining().TotalMilliseconds));
-
-            //AlphaBeta.ShouldOrderMovesDesc = null;
-            //var unsorted = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
-            //Logger.Log(string.Format("\nNO ORDER\n{0}Time remaining: {1} ms\n", unsorted, MoveTimer.I.GetTimeRemaining().TotalMilliseconds));
-
-            //AlphaBeta.ShouldAlphaBeta = false;
-            //var minimax = _alphaBeta.BestMove(board, depthLimit, new NumberOfMovesHeuristic());
-            //Logger.Log(string.Format("\nMINIMAX\n{0}Time remaining: {1} ms\n", minimax, MoveTimer.I.GetTimeRemaining().TotalMilliseconds));
+            // if we're half way through the game, switch heuristics
+            if (board.EmptySpacesRemaining == 39)
+            {
+                _config.Heuristic = new OpenAreaHeuristic();
+            }
 
             return bestMove.Move;
         }
