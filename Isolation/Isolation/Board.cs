@@ -137,25 +137,6 @@ namespace Isolation
             EmptySpacesRemaining--;
         }
 
-        public void RollbackMove(BoardSpace previous)
-        {
-            if (PlayerToMove == Player.X)
-            {
-                _board[Oposition.Row, Oposition.Col] = BoardSpaceValue.Empty;
-                _board[previous.Row, previous.Col] = BoardSpaceValue.PlayerO;
-                Oposition = previous;
-                PlayerToMove = Player.O;
-            }
-            else
-            {
-                _board[Xposition.Row, Xposition.Col] = BoardSpaceValue.Empty;
-                _board[previous.Row, previous.Col] = BoardSpaceValue.PlayerX;
-                Xposition = previous;
-                PlayerToMove = Player.X;
-            }
-            EmptySpacesRemaining++;
-        }
-
         #endregion
 
         #region MoveGenerator

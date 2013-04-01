@@ -8,16 +8,18 @@ namespace Server
 {
     public class Program
     {
-        private static bool _shouldQuit;
+        private static bool _endGame;
 
         private static void ListenForQuit()
         {
             new Thread(() =>
                 {
-                    var input = Console.ReadLine();
-                    if ("Q".Equals(input))
+                    while (!_endGame)
                     {
-                        _shouldQuit = true;
+                        if ("Q".Equals(Console.ReadLine()))
+                        {
+                            _endGame = true;
+                        }   
                     }
                 }).Start();
         }
@@ -76,6 +78,8 @@ namespace Server
             }
 
             clientIn.WriteLine(move);
+
+            clientIn.WriteLine(""); // send a blank line to get past the 'undo' question
         }
 
         private static void PlayGame(Process client1, Process client2)
@@ -99,7 +103,7 @@ namespace Server
 
                 while (true)
                 {
-                    if (_shouldQuit)
+                    if (_endGame)
                     {
                         // user quit
                         Logger.ServerLog("User quit.");
@@ -124,6 +128,8 @@ namespace Server
                     board.Move(oMove);
                     PrintBoard(board);
                 }
+
+                _endGame = true;
             }
         }
 

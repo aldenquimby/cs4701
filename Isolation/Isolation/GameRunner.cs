@@ -124,26 +124,6 @@ namespace Isolation
             return true;
         }
 
-        private static BoardSpace _lastOppoenentSpace;
-
-        private static bool OpponentMoveAllowRollback(Board board)
-        {
-            if (!OpponentMove(board))
-            {
-                return false;
-            }
-
-            Console.WriteLine("Continue? Type 'undo' to rollback the last opponent move.");
-            
-            if ("undo".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
-            {
-                board.RollbackMove(_lastOppoenentSpace);
-                return OpponentMoveAllowRollback(board);
-            }
-            
-            return true;
-        }
-
         // perform opponents next move on the board
         private static bool OpponentMove(Board board)
         {
@@ -187,27 +167,7 @@ namespace Isolation
                 return OpponentMove(board);
             }
 
-            //// ensure it is valid
-            //var isValid = board.IsValidMove(move);
-            //while (!isValid)
-            //{
-            //    Console.WriteLine("This is not a valid opponent move!");
-            //    Console.WriteLine("Was this entered correctly? (Y/N):");
-
-            //    // if opponent enters invalid move, they forfeit
-            //    if ("Y".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
-            //    {
-            //        Console.WriteLine("Opponent forfeits from invalid move.");
-            //        return false;
-            //    }
-                
-            //    move = GetOpponentMove();
-            //    isValid = board.IsValidMove(move);
-            //}
-
-            // _lastOppoenentSpace = board.MyPlayer == Player.X ? board.Oposition : board.Xposition;
-
-            // now that we know it's valid, perform move
+            // now that we know it's valid, and we've asked if they want to undo, perform move
             board.Move(move);
             return true;
         }
