@@ -2,10 +2,11 @@ DROP TABLE IF EXISTS `HeuristicCache` ;
 
 CREATE TABLE IF NOT EXISTS `HeuristicCache` 
 (
-  `Board` VARCHAR(64) NULL ,
+  `Player` BIT(1) NOT NULL ,  
   `Heuristic` VARCHAR(64) NOT NULL ,
+  `Board` VARCHAR(64) NOT NULL ,
   `Score` INT NOT NULL ,
-  PRIMARY KEY (`Board`, `Heuristic`)
+  PRIMARY KEY (`Player`, `Heuristic`, `Board`)
 )
 ENGINE = InnoDB;
 

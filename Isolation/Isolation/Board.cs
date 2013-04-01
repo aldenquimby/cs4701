@@ -7,10 +7,46 @@ namespace Isolation
 {
     public class Board : IEquatable<Board>
     {
+        public Board(string flatBoard, Player myPlayer) : this()
+        {
+            if (flatBoard.Length != 64)
+            {
+                throw new ArgumentException("Invalid board.");
+            }
+
+            Initialize(myPlayer);
+
+            for (byte i = 0; i < 8; i++)
+            {
+                for (byte j = 0; j < 8; j++)
+                {
+                    var space = GetSpaceFromChar(flatBoard[i * 7 + j]);
+                    _board[i, j] = space;
+
+                    if (space == BoardSpaceValue.PlayerX)
+                    {
+                        Xposition = new BoardSpace(i, j);
+                    }
+                    else if (space == BoardSpaceValue.PlayerO)
+                    {
+                        Oposition = new BoardSpace(i, j);
+                    }
+                    else if (space == BoardSpaceValue.Filled)
+                    {
+                        EmptySpacesRemaining--;
+                    }
+                }
+            }
+
+            PlayerToMove = EmptySpacesRemaining % 2 == 0 ? Player.X : Player.O;
+        }
+
         private readonly BoardSpaceValue[,] _board;
 
+        public int EmptySpacesRemaining { get; private set; }
         public Player PlayerToMove { get; private set; }
         public Player MyPlayer { get; private set; }
+        public Player OpponentPlayer { get; private set; }
         public BoardSpace Xposition { get; private set; }
         public BoardSpace Oposition { get; private set; }
 
@@ -23,11 +59,13 @@ namespace Isolation
         public void Initialize(Player myPlayer)
         {
             MyPlayer = myPlayer;
+            OpponentPlayer = MyPlayer == Player.X ? Player.O : Player.X;
         }
         
         private Board()
         {
             _board = new BoardSpaceValue[8, 8];
+            EmptySpacesRemaining = 62;
         }
 
         public static Board ConstructInitialBoard(Player myPlayer)
@@ -37,8 +75,9 @@ namespace Isolation
                 Xposition = new BoardSpace(0, 0),
                 Oposition = new BoardSpace(7, 7),
                 PlayerToMove = Player.X,
-                MyPlayer = myPlayer,
             };
+
+            board.Initialize(myPlayer);
 
             for (byte i = 0; i < 8; i++)
             {
@@ -61,8 +100,10 @@ namespace Isolation
                 Xposition = Xposition,
                 Oposition = Oposition,
                 PlayerToMove = PlayerToMove,
-                MyPlayer = MyPlayer,
+                EmptySpacesRemaining = EmptySpacesRemaining,
             };
+
+            board.Initialize(MyPlayer);
 
             for (byte i = 0; i < 8; i++)
             {
@@ -93,6 +134,7 @@ namespace Isolation
                 Oposition = move;
                 PlayerToMove = Player.X;
             }
+            EmptySpacesRemaining++;
         }
 
         #endregion
@@ -308,40 +350,6 @@ namespace Isolation
                 default:
                     throw new Exception("Invalid board space.");
             }
-        }
-
-        public Board(string flatBoard) : this()
-        {
-            if (flatBoard.Length != 64)
-            {
-                throw new ArgumentException("Invalid board.");
-            }
-
-            byte totalMoves = 0;
-
-            for (byte i = 0; i < 8; i++)
-            {
-                for (byte j = 0; j < 8; j++)
-                {
-                    var space = GetSpaceFromChar(flatBoard[i*7 + j]);
-                    _board[i, j] = space;
-
-                    if (space == BoardSpaceValue.PlayerX)
-                    {
-                        Xposition = new BoardSpace(i, j);
-                    }
-                    else if (space == BoardSpaceValue.PlayerO)
-                    {
-                        Oposition = new BoardSpace(i, j);
-                    }
-                    else if (space == BoardSpaceValue.Filled)
-                    {
-                        totalMoves++;
-                    }
-                }
-            }
-
-            PlayerToMove = totalMoves % 2 == 0 ? Player.X : Player.O;
         }
 
         public string ToFlatString()

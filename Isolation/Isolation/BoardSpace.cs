@@ -45,7 +45,7 @@ namespace Isolation
         {
             unchecked
             {
-                return (Row.GetHashCode() * 397) ^ Col.GetHashCode();
+                return (Row.GetHashCode() * 17) ^ Col.GetHashCode();
             }
         }
 
