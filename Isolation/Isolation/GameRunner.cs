@@ -108,6 +108,8 @@ namespace Isolation
         // perform my next move on the board
         private static bool MyMove(Board board)
         {
+            Console.WriteLine("Shall I go ahead with my move? 'Undo' to ");
+
             var myMove = Searcher.I.GetMyNextMove(board);
 
             if (myMove == null)
@@ -119,6 +121,26 @@ namespace Isolation
             board.Move(myMove);
             Console.WriteLine("My move:");
             Console.WriteLine(myMove.ToString());
+            return true;
+        }
+
+        private static BoardSpace _lastOppoenentSpace;
+
+        private static bool OpponentMoveAllowRollback(Board board)
+        {
+            if (!OpponentMove(board))
+            {
+                return false;
+            }
+
+            Console.WriteLine("Continue? Type 'undo' to rollback the last opponent move.");
+            
+            if ("undo".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
+            {
+                board.RollbackMove(_lastOppoenentSpace);
+                return OpponentMoveAllowRollback(board);
+            }
+            
             return true;
         }
 
@@ -142,22 +164,48 @@ namespace Isolation
             }
 
             // ensure it is valid
-            var isValid = board.IsValidMove(move);
-            while (!isValid)
+            if (!board.IsValidMove(move))
             {
-                Console.WriteLine("This is not a valid opponent move!");
-                Console.WriteLine("Was this entered correctly? (Y/N):");
+                Console.WriteLine("Not a valid opponent move! Was it entered correctly? (y/n):");
 
                 // if opponent enters invalid move, they forfeit
-                if ("Y".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
+                if ("y".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
                 {
                     Console.WriteLine("Opponent forfeits from invalid move.");
                     return false;
                 }
-                
-                move = GetOpponentMove();
-                isValid = board.IsValidMove(move);
+
+                // otherwise it was a mistake, so let's try again
+                return OpponentMove(board);
             }
+
+            // confirm move is correct, which is equivalent to a 'rollback'
+            // a rollback would simply mean asking this question after performing the move instead of before
+            Console.WriteLine("Should I continue? 'undo' to rollback the last move, anything else to continue.");
+            if ("undo".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
+            {
+                return OpponentMove(board);
+            }
+
+            //// ensure it is valid
+            //var isValid = board.IsValidMove(move);
+            //while (!isValid)
+            //{
+            //    Console.WriteLine("This is not a valid opponent move!");
+            //    Console.WriteLine("Was this entered correctly? (Y/N):");
+
+            //    // if opponent enters invalid move, they forfeit
+            //    if ("Y".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
+            //    {
+            //        Console.WriteLine("Opponent forfeits from invalid move.");
+            //        return false;
+            //    }
+                
+            //    move = GetOpponentMove();
+            //    isValid = board.IsValidMove(move);
+            //}
+
+            // _lastOppoenentSpace = board.MyPlayer == Player.X ? board.Oposition : board.Xposition;
 
             // now that we know it's valid, perform move
             board.Move(move);

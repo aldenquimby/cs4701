@@ -137,6 +137,25 @@ namespace Isolation
             EmptySpacesRemaining--;
         }
 
+        public void RollbackMove(BoardSpace previous)
+        {
+            if (PlayerToMove == Player.X)
+            {
+                _board[Oposition.Row, Oposition.Col] = BoardSpaceValue.Empty;
+                _board[previous.Row, previous.Col] = BoardSpaceValue.PlayerO;
+                Oposition = previous;
+                PlayerToMove = Player.O;
+            }
+            else
+            {
+                _board[Xposition.Row, Xposition.Col] = BoardSpaceValue.Empty;
+                _board[previous.Row, previous.Col] = BoardSpaceValue.PlayerX;
+                Xposition = previous;
+                PlayerToMove = Player.X;
+            }
+            EmptySpacesRemaining++;
+        }
+
         #endregion
 
         #region MoveGenerator
@@ -368,10 +387,10 @@ namespace Isolation
         public override string ToString()
         {
             var builder = new StringBuilder();
-            builder.AppendLine("  1 2 3 4 5 6 7 8"); //TODO remove
+            builder.AppendLine("  1 2 3 4 5 6 7 8");
             for (var i = 0; i < 8; i++)
             {
-                builder.Append(i + 1).Append(" "); //TODO remove
+                builder.Append(i + 1).Append(" ");
                 for (var j = 0; j < 8; j++)
                 {
                     builder.Append(GetCharFromSpace(_board[i, j])).Append(" ");

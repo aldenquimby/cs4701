@@ -44,7 +44,7 @@ namespace Isolation
             }
 
             // if we're half way through the game, switch heuristics
-            if (board.EmptySpacesRemaining == 39)
+            if (board.EmptySpacesRemaining == 500)
             {
                 _config.Heuristic = new OpenAreaHeuristic();
             }

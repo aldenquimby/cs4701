@@ -5,24 +5,25 @@
         public SearchConfig(string input)
         {
             // defaults
-            LoadHeuristicCacheFromDb = true;
-            SaveHeuristicCacheToDb = true;
+            LoadHeuristicCacheFromDb = false;
+            SaveHeuristicCacheToDb = false;
             SortMovesAsc = false;
             UseAlphaBeta = true;
-            DepthLimit = 6;
+            DepthLimit = 5;
             PercentTimeLeftForTimeout = 0.01;
             PercentTimeLeftToIncrementDepthLimit = 0.95;
             ReportStatistics = true;
             NumberOfThreads = 4;
-            InterestingPercentScoreChange = 1.85;
-            Heuristic = new NumberOfMovesHeuristic();
+            InterestingPercentScoreChange = 1.95;
+            Heuristic = new OpenAreaHeuristic();
 
             // from input
             if ("1".Equals(input))
             {
                 DepthLimit = 1;
-                PercentTimeLeftToIncrementDepthLimit = 0.98;
+                PercentTimeLeftToIncrementDepthLimit = 0.99;
                 SortMovesAsc = true;
+                Heuristic = new NumberOfMovesHeuristic();
             }
         }
 

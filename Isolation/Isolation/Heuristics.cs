@@ -129,6 +129,9 @@ namespace Isolation
                 return myOpenArea.Count > opponentOpenArea.Count ? int.MaxValue : int.MinValue;
             }
 
+            // since we're in the same area, use current move count
+            return board.GetMyValidMoves().Count - board.GetOpponentValidMoves().Count;
+
             // use open area size difference
             return myOpenArea.Count - opponentOpenArea.Count;
         }
