@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -127,7 +128,17 @@ namespace Isolation
 
             // reduce CPU now that move is over
             Process.GetCurrentProcess().PriorityBoostEnabled = false;
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal;
+            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.Normal;
+
+            foreach (var move in board.GetValidMoves())
+            {
+                var newBoard = board.Copy().Move(move);
+                foreach (var childBoard in newBoard.GetValidMoves().Select(x => board.Copy().Move(x)))
+                {
+                    HeuristicCache.I.RemoveFromCache(childBoard);
+                }
+                HeuristicCache.I.RemoveFromCache(newBoard);
+            }
 
             board.Move(myMove);
 
@@ -143,6 +154,9 @@ namespace Isolation
                 Console.WriteLine("Opponent cannot move!");
                 return false;
             }
+
+            // start evaluation for next move while we wait for opponent
+            Searcher.I.PreComputeNextMove(board);
 
             // ask for move
             var move = GetOpponentMove();

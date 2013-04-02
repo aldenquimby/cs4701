@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace Isolation
 {
@@ -22,11 +23,8 @@ namespace Isolation
         private int _numNodesAtDepthLimit;
         private int _numNodesQuiessenceSearched;
 
-        public BestMoveResult BestMove(Board board, SearchConfig config)
+        public BestMoveResult BestMove(Board board, SearchConfig config, CancellationToken cancelToken)
         {
-            // start timer
-            _timer.StartTimer();
-
             // initialize stats
             _config = config;
             _nodesGeneratedByDepth = Enumerable.Range(1, _config.DepthLimit).ToDictionary(x => x, x => 0);
@@ -34,7 +32,7 @@ namespace Isolation
             _numNodesAtDepthLimit = 0;
             _numNodesQuiessenceSearched = 0;
 
-            var result = BestMoveInternal(board, _config.DepthLimit, int.MinValue, int.MaxValue);
+            var result = BestMoveInternal(board, _config.DepthLimit, int.MinValue, int.MaxValue, cancelToken);
             
             // fill stats
             result.Config = _config;
@@ -42,8 +40,6 @@ namespace Isolation
             result.NodesGeneratedByDepth = _nodesGeneratedByDepth;
             result.NumNodesQuiessenceSearched = _numNodesQuiessenceSearched;
             result.NodesTimedOutByDepth = _nodesTimedOutByDepth;
-            result.PercentOfTimeRemaining = _timer.GetPercentOfTimeRemaining();
-            result.TotalSecondsElapsed = _timer.GetTimeElapsed().TotalSeconds;
 
             return result;
         }
@@ -51,7 +47,7 @@ namespace Isolation
         private bool IsInterestingMove(Board originalBoard, Board newBoard)
         {
             // if no quiessence search configured, nothing is interesting
-            if (_config.InterestingPercentScoreChange == null)
+            if (!_config.QuiessenceSearch)
             {
                 return false;
             }
@@ -74,15 +70,15 @@ namespace Isolation
             var percent1 = ((double)(newScore - originalScore) / newScore);
             var percent2 = ((double)(originalScore - newScore) / originalScore);
 
-            var cutoff = _config.InterestingPercentScoreChange.Value;
+            var interestingScoreChange = _config.DepthLimit + 2;
 
             // must have large enough percent change
-            return percent1 > cutoff || percent1 < -cutoff ||
-                   percent2 > cutoff || percent2 < -cutoff;
+            return percent1 > interestingScoreChange || percent1 < -interestingScoreChange ||
+                   percent2 > interestingScoreChange || percent2 < -interestingScoreChange;
         }
 
         // INITIAL CALL NEEDS -inifinity alpha, infinity beta
-        private BestMoveResult BestMoveInternal(Board board, int depth, int alpha, int beta)
+        private BestMoveResult BestMoveInternal(Board board, int depth, int alpha, int beta, CancellationToken cancelToken)
         {
             // if we reached the bottom, return
             if (depth == 0)
@@ -127,20 +123,20 @@ namespace Isolation
                 {
                     // extend search depth because this move looks interesting
                     _numNodesQuiessenceSearched++;
-                    childResult = BestMoveInternal(move.newBoard, depth, alpha, beta);
+                    childResult = BestMoveInternal(move.newBoard, depth, alpha, beta, cancelToken);
                 }
                 else
                 {
                     // normal evaluation
-                    childResult = BestMoveInternal(move.newBoard, depth - 1, alpha, beta);
+                    childResult = BestMoveInternal(move.newBoard, depth - 1, alpha, beta, cancelToken);
                 }
 
-                // if we're near timeout, just bail :(
-                //if (_timer.GetPercentOfTimeRemaining() < 0.01)
-                //{
-                //    _nodesTimedOutByDepth[depth]++;
-                //    break;
-                //}
+                // if we're near timeout or asked to cancel, just bail :(
+                if (_timer.Timeout() || cancelToken.IsCancellationRequested)
+                {
+                    _nodesTimedOutByDepth[depth]++;
+                    break;
+                }
 
                 if (isMaxTurn) // if it's a max turn, we want to check alpha
                 {
@@ -148,12 +144,6 @@ namespace Isolation
                     {
                         alpha = childResult.Score;
                         bestMove = move.move;
-                    }
-
-                    // alpha-beta trim
-                    if (alpha >= beta)
-                    {
-                        break;
                     }
                 }
                 else // else it's a min turn, so we want to check beta 
@@ -163,12 +153,12 @@ namespace Isolation
                         beta = childResult.Score;
                         bestMove = move.move;
                     }
+                }
 
-                    // alpha-beta trim
-                    if (alpha >= beta)
-                    {
-                        break;
-                    }
+                // alpha-beta trim
+                if (alpha >= beta)
+                {
+                    break;
                 }
             }
 

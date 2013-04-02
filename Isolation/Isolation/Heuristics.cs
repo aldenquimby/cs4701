@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Caching;
 
 namespace Isolation
 {
@@ -145,9 +146,6 @@ namespace Isolation
 
             // since we're in the same area, use current move count
             return board.GetMyValidMoves().Count() - board.GetOpponentValidMoves().Count();
-
-            // use open area size difference
-            return myOpenArea.Count - opponentOpenArea.Count;
         }
 
         public override string Name { get { return "OpenArea"; } }
@@ -170,6 +168,11 @@ namespace Isolation
             _cache = new ConcurrentDictionary<string, IDictionary<string, int>>();
         }
 
+        public void DumpKeyCount()
+        {
+            Console.WriteLine(_cache.Keys.Count);
+        }
+
         public int Evaluate(Board board, HeuristicBase heuristic)
         {
             if (board == null || heuristic == null)
@@ -177,19 +180,36 @@ namespace Isolation
                 return 0;
             }
 
-            if (!_cache.ContainsKey(heuristic.Name))
-            {
-                _cache[heuristic.Name] = new ConcurrentDictionary<string, int>();
-            }
-
             var boardString = board.ToFlatString();
 
-            if (!_cache[heuristic.Name].ContainsKey(boardString))
+            //if (_cache.Keys.Count > 10000000)
+            //{
+            //    if (_cache.ContainsKey(boardString) && _cache[boardString].ContainsKey(heuristic.Name))
+            //    {
+            //        return _cache[boardString][heuristic.Name];
+            //    }
+            //    else
+            //    {
+            //        return heuristic.Evaluate(board);
+            //    }
+            //}
+
+            if (!_cache.ContainsKey(boardString))
             {
-                _cache[heuristic.Name][boardString] = heuristic.Evaluate(board);
+                _cache[boardString] = new ConcurrentDictionary<string, int>();
             }
 
-            return _cache[heuristic.Name][boardString];
+            if (!_cache[boardString].ContainsKey(heuristic.Name))
+            {
+                _cache[boardString][heuristic.Name] = heuristic.Evaluate(board);
+            }
+
+            return _cache[boardString][heuristic.Name];
+        }
+
+        public void RemoveFromCache(Board board)
+        {
+            _cache.Remove(board.ToFlatString());
         }
 
         public void LoadCache(IList<HeuristicDto> dtos)
@@ -198,23 +218,23 @@ namespace Isolation
 
             foreach (var dto in dtos)
             {
-                if (!_cache.ContainsKey(dto.Heuristic))
+                if (!_cache.ContainsKey(dto.Board))
                 {
-                    _cache[dto.Heuristic] = new Dictionary<string, int>();
+                    _cache[dto.Board] = new Dictionary<string, int>();
                 }
 
-                _cache[dto.Heuristic][dto.Board] = dto.Score;
+                _cache[dto.Board][dto.Heuristic] = dto.Score;
             }
         }
 
         public IList<HeuristicDto> DumpCache()
         {
-            var heuristics = _cache.SelectMany(heuristic => heuristic.Value, (heuristic, board) => new HeuristicDto
+            var heuristics = _cache.SelectMany(kvp => kvp.Value, (kvp, kvp2) => new HeuristicDto
                 {
-                    Heuristic = heuristic.Key,
-                    Score = board.Value,
-                    Board = board.Key,
-                }).OrderByDescending(x => x.Heuristic).ToList();
+                    Board = kvp.Key,
+                    Heuristic = kvp2.Key,
+                    Score = kvp2.Value,
+                }).ToList();
 
             _cache.Clear();
 

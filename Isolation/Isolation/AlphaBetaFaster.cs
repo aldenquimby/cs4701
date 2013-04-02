@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace Isolation
 {
@@ -20,11 +21,8 @@ namespace Isolation
         private int _numNodesAtDepthLimit;
         private int _numNodesQuiessenceSearched;
 
-        public BestMoveResult BestMove(Board board, SearchConfig config)
+        public BestMoveResult BestMove(Board board, SearchConfig config, CancellationToken cancelToken)
         {
-            // start timer
-            _timer.StartTimer();
-
             // initialize stats
             _config = config;
             _nodesGeneratedByDepth = Enumerable.Range(1, _config.DepthLimit).ToDictionary(x => x, x => 0);
@@ -43,7 +41,7 @@ namespace Isolation
             {
                 _nodesGeneratedByDepth[_config.DepthLimit]++;
 
-                var childResult = BestMoveInternal(move.newBoard, _config.DepthLimit - 1, alpha, beta);
+                var childResult = BestMoveInternal(move.newBoard, _config.DepthLimit - 1, alpha, beta, cancelToken);
 
                 if (childResult > alpha)
                 {
@@ -54,6 +52,13 @@ namespace Isolation
                 // alpha-beta trim - if we win, stop looking
                 if (alpha >= beta)
                 {
+                    break;
+                }
+
+                // if we're supposed to cancel, or at timeout, bail
+                if (cancelToken.IsCancellationRequested || _timer.GetPercentOfTimeRemaining() < 0.01)
+                {
+                    _nodesTimedOutByDepth[_config.DepthLimit]++;
                     break;
                 }
             }
@@ -80,7 +85,7 @@ namespace Isolation
         private bool IsInterestingMove(Board originalBoard, Board newBoard)
         {
             // if no quiessence search configured, nothing is interesting
-            if (_config.InterestingPercentScoreChange == null)
+            if (!_config.QuiessenceSearch)
             {
                 return false;
             }
@@ -103,14 +108,14 @@ namespace Isolation
             var percent1 = ((double)(newScore - originalScore) / newScore);
             var percent2 = ((double)(originalScore - newScore) / originalScore);
 
-            var cutoff = _config.InterestingPercentScoreChange.Value;
+            var cutoff = _config.DepthLimit + 2;
 
             // must have large enough percent change
             return percent1 > cutoff || percent1 < -cutoff ||
                    percent2 > cutoff || percent2 < -cutoff;
         }
 
-        private int BestMoveInternal(Board board, int depth, int alpha, int beta)
+        private int BestMoveInternal(Board board, int depth, int alpha, int beta, CancellationToken cancelToken)
         {
             // if we reached the bottom, return
             if (depth == 0)
@@ -153,19 +158,12 @@ namespace Isolation
                 {
                     // extend search depth because this move looks interesting
                     _numNodesQuiessenceSearched++;
-                    childResult = BestMoveInternal(childBoard, depth, alpha, beta);
+                    childResult = BestMoveInternal(childBoard, depth, alpha, beta, cancelToken);
                 }
                 else
                 {
                     // normal evaluation
-                    childResult = BestMoveInternal(childBoard, depth - 1, alpha, beta);
-                }
-
-                // if we're near timeout, just bail :(
-                if (_timer.GetPercentOfTimeRemaining() < 0.01)
-                {
-                    _nodesTimedOutByDepth[depth]++;
-                    return isMaxTurn ? alpha : beta;
+                    childResult = BestMoveInternal(childBoard, depth - 1, alpha, beta, cancelToken);
                 }
 
                 if (isMaxTurn) // if it's a max turn, we want to check alpha
@@ -186,6 +184,13 @@ namespace Isolation
                 // alpha-beta trim
                 if (alpha >= beta)
                 {
+                    break;
+                }
+
+                // if we're supposed to cancel, or at timeout, bail
+                if (cancelToken.IsCancellationRequested || _timer.GetPercentOfTimeRemaining() < 0.01)
+                {
+                    _nodesTimedOutByDepth[depth]++;
                     break;
                 }
             }

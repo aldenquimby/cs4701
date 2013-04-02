@@ -125,7 +125,7 @@ namespace Isolation
         private bool IsInterestingMove(Board originalBoard, Board newBoard)
         {
             // if no quiessence search configured, nothing is interesting
-            if (_config.InterestingPercentScoreChange == null)
+            if (!_config.QuiessenceSearch)
             {
                 return false;
             }
@@ -148,7 +148,7 @@ namespace Isolation
             var percent1 = ((double)(newScore - originalScore) / newScore);
             var percent2 = ((double)(originalScore - newScore) / originalScore);
 
-            var cutoff = _config.InterestingPercentScoreChange.Value;
+            var cutoff = _config.DepthLimit + 2;
 
             // must have large enough percent change
             return percent1 > cutoff || percent1 < -cutoff ||

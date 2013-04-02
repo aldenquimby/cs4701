@@ -39,6 +39,7 @@ namespace Isolation
 
         private readonly BoardSpaceValue[,] _board;
 
+        public BoardSpace LastMove { get; private set; }
         public Player PlayerToMove { get; private set; }
         public Player MyPlayer { get; private set; }
         public Player OpponentPlayer { get; private set; }
@@ -143,6 +144,7 @@ namespace Isolation
                 Oposition = move;
                 PlayerToMove = Player.X;
             }
+            LastMove = move;
             return this;
         }
 

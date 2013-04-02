@@ -7,17 +7,17 @@
             // defaults
             LoadHeuristicCacheFromDb = false;
             SaveHeuristicCacheToDb = false;
-            DepthLimit = 5;
-            PercentTimeLeftToIncrementDepthLimit = 1;
+            DepthLimit = 8;
+            PercentTimeLeftToIncrementDepthLimit = 0.95;
             ReportStatistics = true;
-            InterestingPercentScoreChange = 7.5;
+            QuiessenceSearch = true;
             Heuristic = new NumberOfMovesHeuristic();
 
             // from input
             if ("1".Equals(input))
             {
                 DepthLimit = 7;
-                InterestingPercentScoreChange = null;
+                QuiessenceSearch = false;
                 //PercentTimeLeftToIncrementDepthLimit = 1;
                 //SortMovesAsc = false;
             }
@@ -38,8 +38,8 @@
         // output search statistics
         public bool ReportStatistics { get; set; }
 
-        // quiessence search: extend depth if score changes by more than this percent, null for no quiessence
-        public double? InterestingPercentScoreChange { get; set; }
+        // quiessence search: extend depth if nodes look interesting
+        public bool QuiessenceSearch { get; set; }
 
         // heuristic evaluator to use when searching
         public HeuristicBase Heuristic { get; set; }
