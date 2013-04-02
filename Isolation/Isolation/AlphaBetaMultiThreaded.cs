@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Isolation
 {
@@ -33,27 +35,80 @@ namespace Isolation
             _numNodesAtDepthLimit = 0;
             _numNodesQuiessenceSearched = 0;
 
-            var scoreByMove = new Dictionary<BoardSpace, int>();
-
             // one thread per initial move
-            var threads = board.GetValidMoves().Select(x => new Thread(() =>
-                {
-                    var copy = board.Copy().Move(x);
-                    scoreByMove[x] = BestMoveInternal(copy, _config.DepthLimit - 1, int.MinValue, int.MaxValue);
-                })).ToList();
 
-            // start all the threads
-            threads.ForEach(x => x.Start());
+            _alpha = int.MinValue;
 
-            // wait for all threads to finish
-            threads.ForEach(x => x.Join());
+            var movesWithBoards = board.GetValidMoves().Select(x => new {move = x, board = board.Copy().Move(x)});
 
-            // best move has the highest score
-            var bestMove = scoreByMove.OrderByDescending(x => x.Value).FirstOrDefault();
+            BoardSpace bestMove = null;
 
-            var result = scoreByMove.Count == 0
-                             ? new BestMoveResult(int.MinValue, null)
-                             : new BestMoveResult(bestMove.Value, bestMove.Key);
+            var tasks = movesWithBoards.OrderByDescending(x => _evaluator.Evaluate(x.board, _config.Heuristic))
+                               .Select(x => Task.Factory.StartNew(
+                                       () =>
+                                           {
+                                               var child = BestMoveInternal(x.board, _config.DepthLimit - 1, _alpha,
+                                                                            int.MaxValue);
+                                               if (child > _alpha)
+                                               {
+                                                   lock (_alphaLock)
+                                                   {
+                                                       if (child > _alpha)
+                                                       {
+                                                           _alpha = child;
+                                                           bestMove = x.move;
+                                                       }
+                                                   }
+                                               }
+                                           }));
+
+            foreach (var task in tasks)
+            {
+                task.Wait();
+            }
+
+            //Parallel.ForEach(movesWithBoards, x =>
+            //    {
+            //        var childResult = BestMoveInternal(x.board, _config.DepthLimit - 1, _alpha, int.MaxValue);
+            //        if (childResult > _alpha)
+            //        {
+            //            lock (_alphaLock)
+            //            {
+            //                if (childResult > _alpha)
+            //                {
+            //                    _alpha = childResult;
+            //                    bestMove = x.move;
+            //                }
+            //            }
+            //        }
+            //    });
+
+            //foreach (var moveWithBoard in movesWithBoards.OrderByDescending(x => _evaluator.Evaluate(x.board, _config.Heuristic)))
+            //{
+            //    var moveWithBoardClosure = moveWithBoard;
+            //    var t = new Thread(() =>
+            //        {
+            //            var childResult = BestMoveInternal(moveWithBoardClosure.board, _config.DepthLimit - 1, _alpha, int.MaxValue);
+            //            if (childResult > _alpha)
+            //            {
+            //                lock (_alphaLock)
+            //                {
+            //                    if (childResult > _alpha)
+            //                    {
+            //                        _alpha = childResult;
+            //                        bestMove = moveWithBoardClosure.move;
+            //                    }
+            //                }
+            //            }
+            //        });
+            //    t.Start();
+            //    threads.Add(t);
+            //}
+
+            //// wait for all threads to finish
+            //threads.ForEach(x => x.Join());
+
+            var result = new BestMoveResult(_alpha, bestMove);
 
             // fill stats
             result.Config = _config;
@@ -100,6 +155,9 @@ namespace Isolation
                    percent2 > cutoff || percent2 < -cutoff;
         }
 
+        private volatile int _alpha;
+        private readonly object _alphaLock = new object();
+
         // INITIAL CALL NEEDS -inifinity alpha, infinity beta
         private int BestMoveInternal(Board board, int depth, int alpha, int beta)
         {
@@ -115,7 +173,7 @@ namespace Isolation
             var validMoves = board.GetValidMoves();
 
             // if we hit game over before the depth limit, return infinity/-infinity if it's our/their turn
-            if (validMoves.Count == 0)
+            if (!validMoves.Any())
             {
                 return isMaxTurn ? int.MinValue : int.MaxValue;
             }
@@ -124,7 +182,7 @@ namespace Isolation
             var validChildBoards = validMoves.Select(x => board.Copy().Move(x));
 
             // sort move list only if we're not near the bottom of the tree, because it's expensive
-            if (depth > 1 && validMoves.Count > 1)
+            if (depth > 1)
             {
                 validChildBoards = validChildBoards.OrderByDescending(x => _evaluator.Evaluate(x, _config.Heuristic));
             }
@@ -149,10 +207,15 @@ namespace Isolation
                 }
 
                 // if we're near timeout, just bail :(
-                if (_timer.GetPercentOfTimeRemaining() < 0.01)
+                //if (_timer.GetPercentOfTimeRemaining() < 0.01)
+                //{
+                //    _nodesTimedOutByDepth[depth]++;
+                //    break;
+                //}
+
+                if (childResult == int.MaxValue)
                 {
-                    _nodesTimedOutByDepth[depth]++;
-                    return isMaxTurn ? alpha : beta;
+                    Console.WriteLine(board.ToString());
                 }
 
                 if (isMaxTurn) // if it's a max turn, we want to check alpha
@@ -161,12 +224,6 @@ namespace Isolation
                     {
                         alpha = childResult;
                     }
-
-                    // alpha-beta trim
-                    if (alpha >= beta)
-                    {
-                        return alpha;
-                    }
                 }
                 else // else it's a min turn, so we want to check beta 
                 {
@@ -174,12 +231,12 @@ namespace Isolation
                     {
                         beta = childResult;
                     }
+                }
 
-                    // alpha-beta trim
-                    if (alpha >= beta)
-                    {
-                        return beta;
-                    }
+                // alpha-beta trim
+                if (alpha >= beta || _alpha >= beta)
+                {
+                    break;
                 }
             }
 

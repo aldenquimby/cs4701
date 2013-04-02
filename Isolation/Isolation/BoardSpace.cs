@@ -15,18 +15,11 @@ namespace Isolation
 
         public BoardSpace(string fromString)
         {
-            try
-            {
-                var parts = fromString.TrimStart('(').TrimEnd(')').Split(' ');
+            var parts = fromString.TrimStart('(').TrimEnd(')').Split(' ');
 
-                // board spaces are stored 0-7, displayed 1-8, so subtract 1
-                Row = (byte)(byte.Parse(parts[0]) - 1);
-                Col = (byte)(byte.Parse(parts[1]) - 1);
-            }
-            catch
-            {
-                throw new ArgumentException("Invalid board space string.");
-            }
+            // board spaces are stored 0-7, displayed 1-8, so subtract 1
+            Row = (byte)(byte.Parse(parts[0]) - 1);
+            Col = (byte)(byte.Parse(parts[1]) - 1);
         }
 
         public bool Equals(BoardSpace other)

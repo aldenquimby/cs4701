@@ -29,17 +29,13 @@ namespace Isolation
                 Console.WriteLine(bestMove.ToString());
             }
 
-            //var multiThreaded = new AlphaBetaFaster(HeuristicCache.I, MoveTimer.I).BestMove(board, _config);
-            //Console.WriteLine("SHOULD BE FASTER");
-            //Console.WriteLine(multiThreaded.ToString());
-            //if (!(bestMove.Move == null && multiThreaded.Move == null))
-            //{
-            //    if (bestMove.Move == null || multiThreaded.Move == null ||
-            //        !bestMove.Move.Equals(multiThreaded.Move))
-            //    {
-            //        Console.WriteLine("DEATH FAIL"); 
-            //    }
-            //}
+            var multiThreaded = new AlphaBetaFaster(HeuristicCache.I, MoveTimer.I).BestMoveNoStats(board, _config);
+            Console.WriteLine("SHOULD BE FASTER");
+            Console.WriteLine(multiThreaded.ToString());
+            if (bestMove.Score != multiThreaded.Score)
+            {
+                Console.WriteLine("DEATH FAIL");
+            }
 
             // if we have enough time remaining, increase the depth limit
             if (bestMove.PercentOfTimeRemaining > _config.PercentTimeLeftToIncrementDepthLimit)
@@ -54,7 +50,7 @@ namespace Isolation
             }
 
             // if we're half way through the game, switch heuristics
-            if (board.EmptySpacesRemaining - _config.DepthLimit == 25)
+            if (board.GetEmptySpacesRemaining() - _config.DepthLimit == 25)
             {
                 _config.Heuristic = new OpenAreaHeuristic();
             }

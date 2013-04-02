@@ -35,27 +35,34 @@ namespace Isolation
             var validMoves = board.GetValidMoves();
 
             var alpha = int.MinValue;
-            var bestMove = validMoves.FirstOrDefault();
+            var beta = int.MaxValue;
 
-            foreach (var move in validMoves.Select(x => new {move=x, newBoard=board.Copy().Move(x)}).OrderByDescending(x => _evaluator.Evaluate(x.newBoard, _config.Heuristic)))
+            BoardSpace bestMove = null;
+
+            foreach (var move in validMoves.Select(x => new { move = x, newBoard = board.Copy().Move(x) }).OrderByDescending(x => _evaluator.Evaluate(x.newBoard, _config.Heuristic)))
             {
                 _nodesGeneratedByDepth[_config.DepthLimit]++;
 
-                var childBeta = BestMoveInternal(move.newBoard, _config.DepthLimit - 1, alpha, int.MaxValue);
+                var childResult = BestMoveInternal(move.newBoard, _config.DepthLimit - 1, alpha, beta);
 
-                if (childBeta > alpha)
+                if (childResult > alpha)
                 {
-                    alpha = childBeta;
+                    alpha = childResult;
                     bestMove = move.move;
                 }
 
                 // alpha-beta trim - if we win, stop looking
-                if (alpha == int.MaxValue)
+                if (alpha >= beta)
                 {
                     break;
                 }
             }
-            
+
+            if (bestMove == null)
+            {
+                bestMove = validMoves.FirstOrDefault();
+            }
+
             var result = new BestMoveResult(alpha, bestMove);
 
             // fill stats
@@ -79,7 +86,7 @@ namespace Isolation
             }
 
             // prevent infinite quiessence search with hard coded max generation (should never reach this though)
-            if (_numNodesQuiessenceSearched > 1000*_config.DepthLimit)
+            if (_numNodesQuiessenceSearched > 1000 * _config.DepthLimit)
             {
                 return false;
             }
@@ -103,7 +110,6 @@ namespace Isolation
                    percent2 > cutoff || percent2 < -cutoff;
         }
 
-        // INITIAL CALL NEEDS -inifinity alpha, infinity beta
         private int BestMoveInternal(Board board, int depth, int alpha, int beta)
         {
             // if we reached the bottom, return
@@ -118,7 +124,7 @@ namespace Isolation
             var validMoves = board.GetValidMoves();
 
             // if we hit game over before the depth limit, return infinity/-infinity if it's our/their turn
-            if (validMoves.Count == 0)
+            if (!validMoves.Any())
             {
                 return isMaxTurn ? int.MinValue : int.MaxValue;
             }
@@ -127,9 +133,13 @@ namespace Isolation
             var validChildBoards = validMoves.Select(x => board.Copy().Move(x));
 
             // sort move list only if we're not near the bottom of the tree, because it's expensive
-            if (depth > 1 && validMoves.Count > 1)
+            if (isMaxTurn)
             {
                 validChildBoards = validChildBoards.OrderByDescending(x => _evaluator.Evaluate(x, _config.Heuristic));
+            }
+            else
+            {
+                validChildBoards = validChildBoards.OrderBy(x => _evaluator.Evaluate(x, _config.Heuristic));
             }
 
             foreach (var childBoard in validChildBoards)
@@ -164,12 +174,6 @@ namespace Isolation
                     {
                         alpha = childResult;
                     }
-
-                    // alpha-beta trim
-                    if (alpha >= beta)
-                    {
-                        return alpha;
-                    }
                 }
                 else // else it's a min turn, so we want to check beta 
                 {
@@ -177,12 +181,12 @@ namespace Isolation
                     {
                         beta = childResult;
                     }
+                }
 
-                    // alpha-beta trim
-                    if (alpha >= beta)
-                    {
-                        return beta;
-                    }
+                // alpha-beta trim
+                if (alpha >= beta)
+                {
+                    break;
                 }
             }
 

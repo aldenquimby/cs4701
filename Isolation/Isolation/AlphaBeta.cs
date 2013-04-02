@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 
 namespace Isolation
 {
@@ -97,29 +96,25 @@ namespace Isolation
             var validMoves = board.GetValidMoves();
 
             // if we hit game over before the depth limit, return infinity/-infinity if it's our/their turn
-            if (validMoves.Count == 0)
+            if (!validMoves.Any())
             {
                 return new BestMoveResult(isMaxTurn ? int.MinValue : int.MaxValue, null);
             }
 
-            // initialize bestMove to the first possible move, so it will be returned if none are better
-            var bestMove = validMoves.FirstOrDefault();
+            BoardSpace bestMove = null;
 
             // generate new boards for each move
-            var validMovesWithBoard = validMoves.Select(x =>
-                {
-                    var boardCopy = board.Copy();
-                    boardCopy.Move(x);
-                    return new {move = x, board = boardCopy};
-                });
+            var validMovesWithBoard = validMoves.Select(x => new {move = x, newBoard = board.Copy().Move(x)});
 
             // sort move list only if we're not near the bottom of the tree, because it's expensive
-            if (depth > 1 && validMoves.Count > 1)
+            if (isMaxTurn)
             {
-                validMovesWithBoard = validMovesWithBoard.OrderBy(x => _evaluator.Evaluate(x.board, _config.Heuristic));
+                validMovesWithBoard = validMovesWithBoard.OrderByDescending(x => _evaluator.Evaluate(x.newBoard, _config.Heuristic));
             }
-
-            // TODO: multithread
+            else
+            {
+                validMovesWithBoard = validMovesWithBoard.OrderBy(x => _evaluator.Evaluate(x.newBoard, _config.Heuristic));
+            }
 
             foreach (var move in validMovesWithBoard)
             {
@@ -128,24 +123,24 @@ namespace Isolation
                 BestMoveResult childResult;
 
                 // check quiessence search
-                if (IsInterestingMove(board, move.board))
+                if (IsInterestingMove(board, move.newBoard))
                 {
                     // extend search depth because this move looks interesting
                     _numNodesQuiessenceSearched++;
-                    childResult = BestMoveInternal(move.board, depth, alpha, beta);
+                    childResult = BestMoveInternal(move.newBoard, depth, alpha, beta);
                 }
                 else
                 {
                     // normal evaluation
-                    childResult = BestMoveInternal(move.board, depth - 1, alpha, beta);
+                    childResult = BestMoveInternal(move.newBoard, depth - 1, alpha, beta);
                 }
 
                 // if we're near timeout, just bail :(
-                if (_timer.GetPercentOfTimeRemaining() < 0.01)
-                {
-                    _nodesTimedOutByDepth[depth]++;
-                    return new BestMoveResult(isMaxTurn ? alpha : beta, bestMove);
-                }
+                //if (_timer.GetPercentOfTimeRemaining() < 0.01)
+                //{
+                //    _nodesTimedOutByDepth[depth]++;
+                //    break;
+                //}
 
                 if (isMaxTurn) // if it's a max turn, we want to check alpha
                 {
@@ -158,7 +153,7 @@ namespace Isolation
                     // alpha-beta trim
                     if (alpha >= beta)
                     {
-                        return new BestMoveResult(alpha, bestMove);
+                        break;
                     }
                 }
                 else // else it's a min turn, so we want to check beta 
@@ -172,9 +167,15 @@ namespace Isolation
                     // alpha-beta trim
                     if (alpha >= beta)
                     {
-                        return new BestMoveResult(beta, bestMove);
+                        break;
                     }
                 }
+            }
+
+            // if we didn't find anything good, just return the first one
+            if (bestMove == null)
+            {
+                bestMove = validMoves.First();
             }
 
             return new BestMoveResult(isMaxTurn ? alpha : beta, bestMove);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Isolation
 {
@@ -121,13 +122,14 @@ namespace Isolation
                 return false;
             }
 
-            board.Move(myMove);
             Console.WriteLine("My move:");
             Console.WriteLine(myMove.ToString());
 
             // reduce CPU now that move is over
             Process.GetCurrentProcess().PriorityBoostEnabled = false;
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal;
+
+            board.Move(myMove);
 
             return true;
         }
@@ -136,7 +138,7 @@ namespace Isolation
         private static bool OpponentMove(Board board)
         {
             // if opponent can't move, i win!
-            if (board.GetOpponentValidMoves().Count == 0)
+            if (!board.GetOpponentValidMoves().Any())
             {
                 Console.WriteLine("Opponent cannot move!");
                 return false;
@@ -153,7 +155,7 @@ namespace Isolation
             }
 
             // ensure it is valid
-            if (!board.IsValidMove(move))
+            if (!board.GetValidMoves().Any(x => x.Equals(move)))
             {
                 Console.WriteLine("Not a valid opponent move! Was it entered correctly? (y/n):");
 

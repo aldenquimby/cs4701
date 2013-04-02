@@ -17,30 +17,22 @@ namespace Isolation
     {
         public override int Evaluate(Board board)
         {
-            var myMoveCount = board.GetMyValidMoves().Count;
-            var opponenentMoveCount = board.GetOpponentValidMoves().Count;
+            var myMoveCount = board.GetMyValidMoves().Count();
+            var opponenentMoveCount = board.GetOpponentValidMoves().Count();
 
-            if (board.PlayerToMove == board.MyPlayer)
+            if (myMoveCount == 0 && opponenentMoveCount == 0)
             {
-                if (myMoveCount == 0)
-                {
-                    return int.MinValue;
-                }
-                if (opponenentMoveCount == 0)
-                {
-                    return int.MaxValue;
-                }
+                return board.PlayerToMove == board.MyPlayer ? int.MinValue : int.MaxValue;
             }
-            else
+
+            if (myMoveCount == 0)
             {
-                if (opponenentMoveCount == 0)
-                {
-                    return int.MaxValue;
-                } 
-                if (myMoveCount == 0)
-                {
-                    return int.MinValue;
-                }
+                return int.MinValue;
+            }
+        
+            if (opponenentMoveCount == 0)
+            {
+                return int.MaxValue;
             }
 
             return myMoveCount - opponenentMoveCount;
@@ -124,13 +116,16 @@ namespace Isolation
             var myOpenArea = GetOpenArea(board, board.MyPlayer);
             var opponentOpenArea = GetOpenArea(board, board.OpponentPlayer);
 
-            // if i can't move, i lose
+            if (myOpenArea.Count == 0 && opponentOpenArea.Count == 0)
+            {
+                return board.PlayerToMove == board.MyPlayer ? int.MinValue : int.MaxValue;
+            }
+
             if (myOpenArea.Count == 0)
             {
                 return int.MinValue;
             }
-
-            // if opponent can't move, i win
+        
             if (opponentOpenArea.Count == 0)
             {
                 return int.MaxValue;
@@ -139,11 +134,17 @@ namespace Isolation
             // if we're in completely separate areas, whoever has a bigger area will win
             if (myOpenArea.All(x => !opponentOpenArea.Contains(x)))
             {
+                // if areas are the same size, whoever has to move right now will lose
+                if (myOpenArea.Count == opponentOpenArea.Count)
+                {
+                    return board.PlayerToMove == board.MyPlayer ? int.MinValue : int.MaxValue;
+                }
+                
                 return myOpenArea.Count > opponentOpenArea.Count ? int.MaxValue : int.MinValue;
             }
 
             // since we're in the same area, use current move count
-            return board.GetMyValidMoves().Count - board.GetOpponentValidMoves().Count;
+            return board.GetMyValidMoves().Count() - board.GetOpponentValidMoves().Count();
 
             // use open area size difference
             return myOpenArea.Count - opponentOpenArea.Count;

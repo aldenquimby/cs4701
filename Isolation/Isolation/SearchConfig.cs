@@ -16,7 +16,7 @@
             // from input
             if ("1".Equals(input))
             {
-                DepthLimit = 5;
+                DepthLimit = 7;
                 InterestingPercentScoreChange = null;
                 //PercentTimeLeftToIncrementDepthLimit = 1;
                 //SortMovesAsc = false;

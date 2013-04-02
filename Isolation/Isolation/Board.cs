@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace Isolation
 {
     public class Board : IEquatable<Board>
     {
+        //TODO: delete this before handing in
         public Board(string flatBoard, Player myPlayer) : this()
         {
             if (flatBoard.Length != 64)
@@ -31,19 +31,14 @@ namespace Isolation
                     {
                         Oposition = new BoardSpace(i, j);
                     }
-                    else if (space == BoardSpaceValue.Filled)
-                    {
-                        EmptySpacesRemaining--;
-                    }
                 }
             }
 
-            PlayerToMove = EmptySpacesRemaining % 2 == 0 ? Player.X : Player.O;
+            PlayerToMove = GetEmptySpacesRemaining() % 2 == 0 ? Player.X : Player.O;
         }
 
         private readonly BoardSpaceValue[,] _board;
 
-        public int EmptySpacesRemaining { get; private set; }
         public Player PlayerToMove { get; private set; }
         public Player MyPlayer { get; private set; }
         public Player OpponentPlayer { get; private set; }
@@ -65,7 +60,6 @@ namespace Isolation
         private Board()
         {
             _board = new BoardSpaceValue[8, 8];
-            EmptySpacesRemaining = 62;
         }
 
         public static Board ConstructInitialBoard(Player myPlayer)
@@ -100,7 +94,6 @@ namespace Isolation
                 Xposition = Xposition,
                 Oposition = Oposition,
                 PlayerToMove = PlayerToMove,
-                EmptySpacesRemaining = EmptySpacesRemaining,
             };
 
             board.Initialize(MyPlayer);
@@ -114,6 +107,22 @@ namespace Isolation
             }
 
             return board;
+        }
+
+        public int GetEmptySpacesRemaining()
+        {
+            var empty = 0;
+            for (byte i = 0; i < 8; i++)
+            {
+                for (byte j = 0; j < 8; j++)
+                {
+                    if (_board[i, j] == BoardSpaceValue.Empty)
+                    {
+                        empty++;
+                    }
+                }
+            }
+            return empty;
         }
 
         #region perform move
@@ -134,7 +143,6 @@ namespace Isolation
                 Oposition = move;
                 PlayerToMove = Player.X;
             }
-            EmptySpacesRemaining--;
             return this;
         }
 
@@ -142,15 +150,23 @@ namespace Isolation
 
         #region MoveGenerator
 
-        public List<BoardSpace> GetValidMoves()
+        public IEnumerable<BoardSpace> GetValidMoves()
         {
             return PlayerToMove == Player.X ? GetMoves(Xposition) : GetMoves(Oposition);
-        } 
-
-        private List<BoardSpace> GetMoves(BoardSpace currentPosition)
+        }
+        
+        public IEnumerable<BoardSpace> GetMyValidMoves()
         {
-            var moves = new List<BoardSpace>();
+            return MyPlayer == Player.X ? GetMoves(Xposition) : GetMoves(Oposition);
+        }
 
+        public IEnumerable<BoardSpace> GetOpponentValidMoves()
+        {
+            return MyPlayer == Player.X ? GetMoves(Oposition) : GetMoves(Xposition);
+        }
+
+        private IEnumerable<BoardSpace> GetMoves(BoardSpace currentPosition)
+        {
             #region vertical moves
 
             // walk down from currentPosition
@@ -158,7 +174,7 @@ namespace Isolation
             {
                 if (_board[i, currentPosition.Col] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace((byte)i, currentPosition.Col));
+                    yield return new BoardSpace((byte)i, currentPosition.Col);
                 }
                 else { break; }
             }
@@ -168,7 +184,7 @@ namespace Isolation
             {
                 if (_board[i, currentPosition.Col] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace((byte)i, currentPosition.Col));
+                    yield return new BoardSpace((byte)i, currentPosition.Col);
                 }
                 else { break; }
             }
@@ -182,7 +198,7 @@ namespace Isolation
             {
                 if (_board[currentPosition.Row, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(currentPosition.Row, (byte)j));
+                    yield return new BoardSpace(currentPosition.Row, (byte)j);
                 }
                 else { break; }
             }
@@ -192,7 +208,7 @@ namespace Isolation
             {
                 if (_board[currentPosition.Row, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace(currentPosition.Row, (byte)j));
+                    yield return new BoardSpace(currentPosition.Row, (byte)j);
                 }
                 else { break; }
             }
@@ -206,60 +222,43 @@ namespace Isolation
             {
                 if (_board[i, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace((byte)i, (byte)j));
+                    yield return new BoardSpace((byte)i, (byte)j);
                 }
                 else { break; }
             }
 
             // walk down-left from currentPosition
-            for (int i = currentPosition.Row + 1, j = currentPosition.Col - 1; i < 8 && j >=0; i++, j--)
+            for (int i = currentPosition.Row + 1, j = currentPosition.Col - 1; i < 8 && j >= 0; i++, j--)
             {
                 if (_board[i, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace((byte)i, (byte)j));
+                    yield return new BoardSpace((byte)i, (byte)j);
                 }
                 else { break; }
             }
 
             // walk up-right from currentPosition
-            for (int i = currentPosition.Row - 1, j = currentPosition.Col + 1; i >=0 && j < 8; i--, j++)
+            for (int i = currentPosition.Row - 1, j = currentPosition.Col + 1; i >= 0 && j < 8; i--, j++)
             {
                 if (_board[i, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace((byte)i, (byte)j));
+                    yield return new BoardSpace((byte)i, (byte)j);
                 }
                 else { break; }
             }
 
             // walk up-left from currentPosition
-            for (int i = currentPosition.Row - 1, j = currentPosition.Col - 1; i >=0 && j >=0; i--, j--)
+            for (int i = currentPosition.Row - 1, j = currentPosition.Col - 1; i >= 0 && j >= 0; i--, j--)
             {
                 if (_board[i, j] == BoardSpaceValue.Empty)
                 {
-                    moves.Add(new BoardSpace((byte)i, (byte)j));
+                    yield return new BoardSpace((byte)i, (byte)j);
                 }
                 else { break; }
             }
 
             #endregion
-
-            return moves;
         } 
-
-        public List<BoardSpace> GetMyValidMoves()
-        {
-            return MyPlayer == Player.X ? GetMoves(Xposition) : GetMoves(Oposition);
-        }
-
-        public List<BoardSpace> GetOpponentValidMoves()
-        {
-            return MyPlayer == Player.X ? GetMoves(Oposition) : GetMoves(Xposition);
-        }
-
-        public bool IsValidMove(BoardSpace move)
-        {
-            return GetValidMoves().Any(x => x.Equals(move));
-        }
 
         #endregion
 
