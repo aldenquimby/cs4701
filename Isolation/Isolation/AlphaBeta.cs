@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace Isolation
 {
@@ -56,8 +57,8 @@ namespace Isolation
                 return false;
             }
 
-            // prevent indefinite quiessence search
-            if (_numNodesQuiessenceSearched > _config.MaxQuiessenceNodes)
+            // prevent infinite quiessence search with hard coded max generation (should never reach this though)
+            if (_numNodesQuiessenceSearched > 1000*_config.DepthLimit)
             {
                 return false;
             }
@@ -77,8 +78,8 @@ namespace Isolation
             var cutoff = _config.InterestingPercentScoreChange.Value;
 
             // must have large enough percent change
-            return (percent1 > cutoff || percent1 < -cutoff) ||
-                   (percent2 > cutoff || percent2 < -cutoff);
+            return percent1 > cutoff || percent1 < -cutoff ||
+                   percent2 > cutoff || percent2 < -cutoff;
         }
 
         // INITIAL CALL NEEDS -inifinity alpha, infinity beta
@@ -91,10 +92,18 @@ namespace Isolation
                 return new BestMoveResult(_evaluator.Evaluate(board, _config.Heuristic), null);
             }
 
+            var isMaxTurn = board.MyPlayer == board.PlayerToMove;
+
             var validMoves = board.GetValidMoves();
 
-            // try to initialize bestMove to the first possible move, so it will be returned if it's the only move
-            var bestMove = validMoves.Count > 0 ? validMoves.First() : null;
+            // if we hit game over before the depth limit, return infinity/-infinity if it's our/their turn
+            if (validMoves.Count == 0)
+            {
+                return new BestMoveResult(isMaxTurn ? int.MinValue : int.MaxValue, null);
+            }
+
+            // initialize bestMove to the first possible move, so it will be returned if none are better
+            var bestMove = validMoves.FirstOrDefault();
 
             // generate new boards for each move
             var validMovesWithBoard = validMoves.Select(x =>
@@ -104,17 +113,11 @@ namespace Isolation
                     return new {move = x, board = boardCopy};
                 });
 
-            // sort move list depending on configuration
-            if (_config.SortMovesAsc == true)
+            // sort move list only if we're not near the bottom of the tree, because it's expensive
+            if (depth > 2 && validMoves.Count > 1)
             {
                 validMovesWithBoard = validMovesWithBoard.OrderByDescending(x => _evaluator.Evaluate(x.board, _config.Heuristic));
             }
-            else if (_config.SortMovesAsc == false)
-            {
-                validMovesWithBoard = validMovesWithBoard.OrderBy(x => _evaluator.Evaluate(x.board, _config.Heuristic));
-            }
-
-            var isMaxTurn = board.MyPlayer == board.PlayerToMove;
 
             // TODO: multithread
 
@@ -137,8 +140,8 @@ namespace Isolation
                     childResult = BestMoveInternal(move.board, depth - 1, alpha, beta);
                 }
 
-                // if we're near timeout, bail
-                if (_timer.GetPercentOfTimeRemaining() < _config.PercentTimeLeftForTimeout)
+                // if we're near timeout, just bail :(
+                if (_timer.GetPercentOfTimeRemaining() < 0.01)
                 {
                     _nodesTimedOutByDepth[depth]++;
                     return new BestMoveResult(isMaxTurn ? alpha : beta, bestMove);
@@ -153,7 +156,7 @@ namespace Isolation
                     }
 
                     // alpha-beta trim
-                    if (_config.UseAlphaBeta && alpha >= beta)
+                    if (alpha >= beta)
                     {
                         return new BestMoveResult(alpha, bestMove);
                     }
@@ -167,7 +170,7 @@ namespace Isolation
                     }
 
                     // alpha-beta trim
-                    if (_config.UseAlphaBeta && alpha >= beta)
+                    if (alpha >= beta)
                     {
                         return new BestMoveResult(beta, bestMove);
                     }
@@ -216,7 +219,6 @@ namespace Isolation
             builder.AppendLine("Move: " + Move);
             builder.AppendLine("Score: " + Score);
             builder.AppendLine("Heuristic: " + Config.Heuristic.Name);
-            builder.AppendLine("Move Sorting: " + (Config.SortMovesAsc == null ? "none" : Config.SortMovesAsc.Value ? "ASC" : "DSC"));
             builder.AppendLine("Depth Limit: " + Config.DepthLimit);
             builder.AppendLine("Time Taken (s): " + TotalSecondsElapsed);
             builder.AppendLine("Time Left (%): " + PercentOfTimeRemaining*100);

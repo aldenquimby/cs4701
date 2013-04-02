@@ -20,7 +20,7 @@ namespace Isolation
             {
                 for (byte j = 0; j < 8; j++)
                 {
-                    var space = GetSpaceFromChar(flatBoard[i * 7 + j]);
+                    var space = GetSpaceFromChar(flatBoard[i * 8 + j]);
                     _board[i, j] = space;
 
                     if (space == BoardSpaceValue.PlayerX)

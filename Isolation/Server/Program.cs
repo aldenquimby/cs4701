@@ -153,12 +153,10 @@ namespace Server
             try
             {
                 PlayGame(client1, client2);
-                Console.ReadKey();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
-                Console.ReadKey();
             }
             finally
             {
@@ -171,6 +169,8 @@ namespace Server
                     client2.Kill();
                 }
             }
+
+            Console.ReadKey();
         }
     }
 }

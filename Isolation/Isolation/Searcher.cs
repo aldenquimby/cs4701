@@ -22,8 +22,6 @@ namespace Isolation
 
         public BoardSpace GetMyNextMove(Board board)
         {
-            _config.MaxQuiessenceNodes = 1000*_config.DepthLimit;
-
             var bestMove = _alphaBeta.BestMove(board, _config);
 
             if (_config.ReportStatistics)
@@ -31,20 +29,29 @@ namespace Isolation
                 Console.WriteLine(bestMove.ToString());
             }
 
-            // if we have over half time remaining, increase the depth limit
+            //if (board.EmptySpacesRemaining - _config.DepthLimit < 26)
+            //{
+            //    _config.Heuristic = new OpenAreaHeuristic();
+            //    var otherBestMove = _alphaBeta.BestMove(board, _config);
+            //    Console.WriteLine("OTHER HEURISTIC SAYS THIS");
+            //    Console.WriteLine(otherBestMove.ToString());
+            //    _config.Heuristic = new NumberOfMovesHeuristic();                
+            //}
+
+            // if we have enough time remaining, increase the depth limit
             if (bestMove.PercentOfTimeRemaining > _config.PercentTimeLeftToIncrementDepthLimit)
             {
                 _config.DepthLimit++;
             }
-
+            
             // if we timed out, decrease depth limit
-            if (bestMove.PercentOfTimeRemaining < _config.PercentTimeLeftForTimeout)
+            if (bestMove.PercentOfTimeRemaining < 0.01)
             {
                 _config.DepthLimit--;
             }
 
             // if we're half way through the game, switch heuristics
-            if (board.EmptySpacesRemaining == 500)
+            if (board.EmptySpacesRemaining - _config.DepthLimit == 25)
             {
                 _config.Heuristic = new OpenAreaHeuristic();
             }

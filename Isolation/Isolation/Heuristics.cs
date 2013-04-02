@@ -17,17 +17,29 @@ namespace Isolation
         public override int Evaluate(Board board)
         {
             var myMoveCount = board.GetMyValidMoves().Count;
-
-            if (myMoveCount == 0)
-            {
-                return int.MinValue;
-            }
-
             var opponenentMoveCount = board.GetOpponentValidMoves().Count;
 
-            if (opponenentMoveCount == 0)
+            if (board.PlayerToMove == board.MyPlayer)
             {
-                return int.MaxValue;
+                if (myMoveCount == 0)
+                {
+                    return int.MinValue;
+                }
+                if (opponenentMoveCount == 0)
+                {
+                    return int.MaxValue;
+                }
+            }
+            else
+            {
+                if (opponenentMoveCount == 0)
+                {
+                    return int.MaxValue;
+                } 
+                if (myMoveCount == 0)
+                {
+                    return int.MinValue;
+                }
             }
 
             return myMoveCount - opponenentMoveCount;

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Isolation
 {
@@ -108,7 +109,9 @@ namespace Isolation
         // perform my next move on the board
         private static bool MyMove(Board board)
         {
-            Console.WriteLine("Shall I go ahead with my move? 'Undo' to ");
+            // jack up CPU when calculating move
+            Process.GetCurrentProcess().PriorityBoostEnabled = true;
+            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
 
             var myMove = Searcher.I.GetMyNextMove(board);
 
@@ -121,6 +124,11 @@ namespace Isolation
             board.Move(myMove);
             Console.WriteLine("My move:");
             Console.WriteLine(myMove.ToString());
+
+            // reduce CPU now that move is over
+            Process.GetCurrentProcess().PriorityBoostEnabled = false;
+            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.BelowNormal;
+
             return true;
         }
 
@@ -139,6 +147,7 @@ namespace Isolation
 
             if (move == null) //TODO: remove this hack for the server
             {
+                Console.ReadLine(); // getting past the stupid 'undo' question
                 Console.WriteLine("Opponenet quit.");
                 return false;
             }
@@ -159,7 +168,7 @@ namespace Isolation
                 return OpponentMove(board);
             }
 
-            // confirm move is correct, which is equivalent to a 'rollback'
+            // confirm move is correct, which is equivalent to rollback functionality
             // a rollback would simply mean asking this question after performing the move instead of before
             Console.WriteLine("Should I continue? 'undo' to rollback the last move, anything else to continue.");
             if ("undo".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
