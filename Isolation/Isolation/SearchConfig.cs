@@ -7,10 +7,9 @@
             // defaults
             LoadHeuristicCacheFromDb = false;
             SaveHeuristicCacheToDb = false;
-            DepthLimit = 7;
+            DepthLimit = 5;
             PercentTimeLeftToIncrementDepthLimit = 1;
             ReportStatistics = true;
-            NumberOfThreads = 4;
             InterestingPercentScoreChange = 7.5;
             Heuristic = new NumberOfMovesHeuristic();
 
@@ -38,9 +37,6 @@
 
         // output search statistics
         public bool ReportStatistics { get; set; }
-
-        // multi-threaded search?
-        public int NumberOfThreads { get; set; }
 
         // quiessence search: extend depth if score changes by more than this percent, null for no quiessence
         public double? InterestingPercentScoreChange { get; set; }

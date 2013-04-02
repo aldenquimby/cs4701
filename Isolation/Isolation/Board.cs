@@ -118,7 +118,7 @@ namespace Isolation
 
         #region perform move
 
-        public void Move(BoardSpace move)
+        public Board Move(BoardSpace move)
         {
             if (PlayerToMove == Player.X)
             {
@@ -135,6 +135,7 @@ namespace Isolation
                 PlayerToMove = Player.X;
             }
             EmptySpacesRemaining--;
+            return this;
         }
 
         #endregion

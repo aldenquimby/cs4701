@@ -29,13 +29,16 @@ namespace Isolation
                 Console.WriteLine(bestMove.ToString());
             }
 
-            //if (board.EmptySpacesRemaining - _config.DepthLimit < 26)
+            //var multiThreaded = new AlphaBetaFaster(HeuristicCache.I, MoveTimer.I).BestMove(board, _config);
+            //Console.WriteLine("SHOULD BE FASTER");
+            //Console.WriteLine(multiThreaded.ToString());
+            //if (!(bestMove.Move == null && multiThreaded.Move == null))
             //{
-            //    _config.Heuristic = new OpenAreaHeuristic();
-            //    var otherBestMove = _alphaBeta.BestMove(board, _config);
-            //    Console.WriteLine("OTHER HEURISTIC SAYS THIS");
-            //    Console.WriteLine(otherBestMove.ToString());
-            //    _config.Heuristic = new NumberOfMovesHeuristic();                
+            //    if (bestMove.Move == null || multiThreaded.Move == null ||
+            //        !bestMove.Move.Equals(multiThreaded.Move))
+            //    {
+            //        Console.WriteLine("DEATH FAIL"); 
+            //    }
             //}
 
             // if we have enough time remaining, increase the depth limit

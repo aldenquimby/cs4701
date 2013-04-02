@@ -1,17 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 
 namespace Isolation
 {
-    public class AlphaBeta
+    public class AlphaBetaMultiThreaded
     {
         private readonly HeuristicCache _evaluator;
         private readonly MoveTimer _timer;
 
-        public AlphaBeta(HeuristicCache evaluator, MoveTimer timer)
+        public AlphaBetaMultiThreaded(HeuristicCache evaluator, MoveTimer timer)
         {
             _evaluator = evaluator;
             _timer = timer;
@@ -35,8 +33,28 @@ namespace Isolation
             _numNodesAtDepthLimit = 0;
             _numNodesQuiessenceSearched = 0;
 
-            var result = BestMoveInternal(board, _config.DepthLimit, int.MinValue, int.MaxValue);
-            
+            var scoreByMove = new Dictionary<BoardSpace, int>();
+
+            // one thread per initial move
+            var threads = board.GetValidMoves().Select(x => new Thread(() =>
+                {
+                    var copy = board.Copy().Move(x);
+                    scoreByMove[x] = BestMoveInternal(copy, _config.DepthLimit - 1, int.MinValue, int.MaxValue);
+                })).ToList();
+
+            // start all the threads
+            threads.ForEach(x => x.Start());
+
+            // wait for all threads to finish
+            threads.ForEach(x => x.Join());
+
+            // best move has the highest score
+            var bestMove = scoreByMove.OrderByDescending(x => x.Value).FirstOrDefault();
+
+            var result = scoreByMove.Count == 0
+                             ? new BestMoveResult(int.MinValue, null)
+                             : new BestMoveResult(bestMove.Value, bestMove.Key);
+
             // fill stats
             result.Config = _config;
             result.NumNodesAtDepthLimit = _numNodesAtDepthLimit;
@@ -58,7 +76,7 @@ namespace Isolation
             }
 
             // prevent infinite quiessence search with hard coded max generation (should never reach this though)
-            if (_numNodesQuiessenceSearched > 1000*_config.DepthLimit)
+            if (_numNodesQuiessenceSearched > 1000 * _config.DepthLimit)
             {
                 return false;
             }
@@ -83,13 +101,13 @@ namespace Isolation
         }
 
         // INITIAL CALL NEEDS -inifinity alpha, infinity beta
-        private BestMoveResult BestMoveInternal(Board board, int depth, int alpha, int beta)
+        private int BestMoveInternal(Board board, int depth, int alpha, int beta)
         {
             // if we reached the bottom, return
             if (depth == 0)
             {
                 _numNodesAtDepthLimit++;
-                return new BestMoveResult(_evaluator.Evaluate(board, _config.Heuristic), null);
+                return _evaluator.Evaluate(board, _config.Heuristic);
             }
 
             var isMaxTurn = board.MyPlayer == board.PlayerToMove;
@@ -99,134 +117,73 @@ namespace Isolation
             // if we hit game over before the depth limit, return infinity/-infinity if it's our/their turn
             if (validMoves.Count == 0)
             {
-                return new BestMoveResult(isMaxTurn ? int.MinValue : int.MaxValue, null);
+                return isMaxTurn ? int.MinValue : int.MaxValue;
             }
 
-            // initialize bestMove to the first possible move, so it will be returned if none are better
-            var bestMove = validMoves.FirstOrDefault();
-
             // generate new boards for each move
-            var validMovesWithBoard = validMoves.Select(x =>
-                {
-                    var boardCopy = board.Copy();
-                    boardCopy.Move(x);
-                    return new {move = x, board = boardCopy};
-                });
+            var validChildBoards = validMoves.Select(x => board.Copy().Move(x));
 
             // sort move list only if we're not near the bottom of the tree, because it's expensive
             if (depth > 1 && validMoves.Count > 1)
             {
-                validMovesWithBoard = validMovesWithBoard.OrderBy(x => _evaluator.Evaluate(x.board, _config.Heuristic));
+                validChildBoards = validChildBoards.OrderByDescending(x => _evaluator.Evaluate(x, _config.Heuristic));
             }
 
-            // TODO: multithread
-
-            foreach (var move in validMovesWithBoard)
+            foreach (var childBoard in validChildBoards)
             {
                 _nodesGeneratedByDepth[depth]++;
 
-                BestMoveResult childResult;
+                int childResult;
 
                 // check quiessence search
-                if (IsInterestingMove(board, move.board))
+                if (IsInterestingMove(board, childBoard))
                 {
                     // extend search depth because this move looks interesting
                     _numNodesQuiessenceSearched++;
-                    childResult = BestMoveInternal(move.board, depth, alpha, beta);
+                    childResult = BestMoveInternal(childBoard, depth, alpha, beta);
                 }
                 else
                 {
                     // normal evaluation
-                    childResult = BestMoveInternal(move.board, depth - 1, alpha, beta);
+                    childResult = BestMoveInternal(childBoard, depth - 1, alpha, beta);
                 }
 
                 // if we're near timeout, just bail :(
                 if (_timer.GetPercentOfTimeRemaining() < 0.01)
                 {
                     _nodesTimedOutByDepth[depth]++;
-                    return new BestMoveResult(isMaxTurn ? alpha : beta, bestMove);
+                    return isMaxTurn ? alpha : beta;
                 }
 
                 if (isMaxTurn) // if it's a max turn, we want to check alpha
                 {
-                    if (childResult.Score > alpha)
+                    if (childResult > alpha)
                     {
-                        alpha = childResult.Score;
-                        bestMove = move.move;
+                        alpha = childResult;
                     }
 
                     // alpha-beta trim
                     if (alpha >= beta)
                     {
-                        return new BestMoveResult(alpha, bestMove);
+                        return alpha;
                     }
                 }
                 else // else it's a min turn, so we want to check beta 
                 {
-                    if (childResult.Score < beta)
+                    if (childResult < beta)
                     {
-                        beta = childResult.Score;
-                        bestMove = move.move;
+                        beta = childResult;
                     }
 
                     // alpha-beta trim
                     if (alpha >= beta)
                     {
-                        return new BestMoveResult(beta, bestMove);
+                        return beta;
                     }
                 }
             }
 
-            return new BestMoveResult(isMaxTurn ? alpha : beta, bestMove);
-        }
-    }
-
-    public class BestMoveResult
-    {
-        public BestMoveResult(int score, BoardSpace bestMove)
-        {
-            Move = bestMove;
-            Score = score;
-            NodesGeneratedByDepth = new Dictionary<int, int>();
-            NodesTimedOutByDepth = new Dictionary<int, int>();
-        }
-
-        public BoardSpace Move { get; set; }
-        public int Score { get; set; }
-        
-        public SearchConfig Config { get; set; }
-        public IDictionary<int, int> NodesGeneratedByDepth { get; set; }
-        public IDictionary<int, int> NodesTimedOutByDepth { get; set; }
-        public int NumNodesAtDepthLimit { get; set; }
-        public int NumNodesQuiessenceSearched { get; set; }
-        public double TotalSecondsElapsed { get; set; }
-        public double PercentOfTimeRemaining { get; set; }
-
-        public override string ToString()
-        {
-            Func<IDictionary<int, int>, string> printByDepth =
-                byDepth =>
-                    {
-                        var total = byDepth.Sum(x => x.Value);
-                        if (total == 0)
-                        {
-                            return "0";
-                        }
-                        return total + " => " + string.Join(", ", byDepth.OrderByDescending(x => x.Key).Select(x => x.Key + "-" + x.Value));
-                    };
-
-            var builder = new StringBuilder();
-            builder.AppendLine("Move: " + Move);
-            builder.AppendLine("Score: " + Score);
-            builder.AppendLine("Heuristic: " + Config.Heuristic.Name);
-            builder.AppendLine("Depth Limit: " + Config.DepthLimit);
-            builder.AppendLine("Time Taken (s): " + TotalSecondsElapsed);
-            builder.AppendLine("Time Left (%): " + PercentOfTimeRemaining*100);
-            builder.AppendLine("Node Generation: " + printByDepth(NodesGeneratedByDepth));
-            builder.AppendLine("Node Timeouts: " + printByDepth(NodesTimedOutByDepth));
-            builder.AppendLine("Depth Limit Nodes: " + NumNodesAtDepthLimit);
-            builder.AppendLine("Quiessence Nodes: " + NumNodesQuiessenceSearched);
-            return builder.ToString();
+            return isMaxTurn ? alpha : beta;
         }
     }
 }

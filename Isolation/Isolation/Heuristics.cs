@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -161,11 +162,11 @@ namespace Isolation
 
         #endregion
 
-        private readonly Dictionary<string, Dictionary<string, int>> _cache;
+        private readonly IDictionary<string, IDictionary<string, int>> _cache;
 
         public HeuristicCache()
         {
-            _cache = new Dictionary<string, Dictionary<string, int>>();
+            _cache = new ConcurrentDictionary<string, IDictionary<string, int>>();
         }
 
         public int Evaluate(Board board, HeuristicBase heuristic)
@@ -177,7 +178,7 @@ namespace Isolation
 
             if (!_cache.ContainsKey(heuristic.Name))
             {
-                _cache[heuristic.Name] = new Dictionary<string, int>();
+                _cache[heuristic.Name] = new ConcurrentDictionary<string, int>();
             }
 
             var boardString = board.ToFlatString();
