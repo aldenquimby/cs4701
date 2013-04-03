@@ -40,6 +40,7 @@ namespace Isolation
             // from timeoutInSeconds
             if ("59".Equals(timeoutInSeconds))
             {
+                DepthLimit = 7;
                 QuiessenceSearch = false;
                 _middleHeuristic = new NumberOfMovesHeuristic();
                 //PercentTimeLeftToIncrementDepthLimit = 1;

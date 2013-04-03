@@ -18,6 +18,7 @@ namespace Isolation
         public MoveTimer()
         {
             _sw = new Stopwatch();
+            _timeout = TimeSpan.FromSeconds(60); // default timeout of 1 min
         }
 
         // set time allowed to calculate move

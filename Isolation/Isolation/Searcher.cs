@@ -17,7 +17,7 @@ namespace Isolation
 
         private SearchConfig _config;
 
-        // if end game, STOP DOING ALPHA BETA - just walk our longest possible path
+        // if end game, DONT ALWAYS DO ALPHA BETA, try to just walk our longest possible path
         private Func<IBestMoveGetter> MoveGetter
         {
             get
@@ -145,7 +145,7 @@ namespace Isolation
                         _config.DepthLimit = 30;
                         _config.GameMode = GameMode.End;
                         HeuristicCache.I.ClearCache();
-                    }                
+                    }
                     // if we think we're going to lose and have some time left, try to find our best move b/c alpha-beta will pick a random one
                     else if (bestMoveResult.Score == int.MinValue && !timedOut)
                     {
@@ -185,16 +185,15 @@ namespace Isolation
                                 break;
                             }
 
+                            // if we found a better move, use it
                             if (newBestMove.Score > bestMoveResult.Score)
                             {
-                                Console.WriteLine("Changing best move from old!");
-                                Console.WriteLine(bestMoveResult.ToString());
                                 bestMoveResult = newBestMove;
                             }
                         }
 
                         // if we still think we're gauarenteed to lose, switch to end game to maximize moves left
-                        if (bestMoveResult.Score == int.MinValue) 
+                        if (bestMoveResult.Score == int.MinValue && emptySpaces <= 30) 
                         {
                             _config.DepthLimit = 30;
                             _config.GameMode = GameMode.End;

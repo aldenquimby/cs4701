@@ -187,10 +187,10 @@ namespace Isolation
                 var newBoard = board.Copy();
                 makeMove(newBoard, move);
 
-                var child = LongestPathLengthInternal(newBoard, moveGetter, makeMove) + 1;
-                if (child > longest)
+                var pathLength = LongestPathLengthInternal(newBoard, moveGetter, makeMove) + 1;
+                if (pathLength > longest)
                 {
-                    longest = child;
+                    longest = pathLength;
                 }
             }
             return longest;

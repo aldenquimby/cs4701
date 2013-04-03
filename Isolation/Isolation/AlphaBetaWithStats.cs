@@ -65,8 +65,13 @@ namespace Isolation
             BoardSpace bestMove = null;
 
             // generate new boards for each move and evaluate them so we can sort
-            var validMovesWithBoard = validMoves.Select(x => new { move = x, newBoard = board.Copy().Move(x) })
-                                                .Select(x => new { x.move, x.newBoard, score = _evaluator.Evaluate(x.newBoard, _config.Heuristic) });
+            var validMovesWithBoard = validMoves.Select(x =>
+                {
+                    var newBoard = board.Copy().Move(x);
+                    _nodesGeneratedByDepth[depth]++;
+                    var score = _evaluator.Evaluate(newBoard, _config.Heuristic);
+                    return new {move = x, newBoard, score};
+                });
 
             // if we're maxing, sort with largest first, otherwise sort with smallest first
             if (isMaxTurn)
@@ -83,8 +88,6 @@ namespace Isolation
 
             foreach (var move in validMovesWithBoard)
             {
-                _nodesGeneratedByDepth[depth]++;
-
                 BestMoveResultWithStats childResult;
 
                 // if we're doing a quiessence search, check to see if heuristic score change is interesting
@@ -140,7 +143,7 @@ namespace Isolation
             return new BestMoveResultWithStats(isMaxTurn ? alpha : beta, bestMove);
         }
 
-        public bool IsInterestingMove(int originalScore, int newScore)
+        private bool IsInterestingMove(int originalScore, int newScore)
         {
             // if no quiessence search configured, nothing is interesting
             if (!_config.QuiessenceSearch)
