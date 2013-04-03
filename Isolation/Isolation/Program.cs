@@ -141,19 +141,6 @@ namespace Isolation
 
         public static void Main(string[] args)
         {
-            Process.GetCurrentProcess().PriorityBoostEnabled = true;
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
-            var l = new LongestPath();
-            var config = new SearchConfig("60") {DepthLimit = 30, GameMode = GameMode.End};
-
-            for (var i = 0; i < 5; i++)
-            {
-                var board = GetBoard(39);
-                Console.WriteLine(board);
-                l.BestMove(board, config, new MoveTimer(), new CancellationToken());
-            }
-            Console.ReadLine();
-            return;
             try
             {
                 // jack up CPU

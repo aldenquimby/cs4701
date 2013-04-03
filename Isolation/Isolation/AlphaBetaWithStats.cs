@@ -4,11 +4,10 @@ using System.Threading;
 
 namespace Isolation
 {
-    public interface IBestMoveGetter
-    {
-        IBestMoveResult BestMove(Board board, SearchConfig config, MoveTimer timer, CancellationToken cancelToken);
-    }
-
+    // ***************************************************
+    // THIS CLASS IS NOT USED AND IS ONLY INCLUDED TO SHOW
+    // HOW I EVALUATED HEURISTICS AND RECORDED STATISTICS
+    // ***************************************************
     public class AlphaBetaWithStats : IBestMoveGetter
     {
         private HeuristicCache _evaluator;

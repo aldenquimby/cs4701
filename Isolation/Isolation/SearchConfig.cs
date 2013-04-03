@@ -6,8 +6,6 @@ namespace Isolation
     {
         public SearchConfig(SearchConfig toCopy)
         {
-            LoadHeuristicCacheFromDb = toCopy.LoadHeuristicCacheFromDb;
-            SaveHeuristicCacheToDb = toCopy.SaveHeuristicCacheToDb;
             DepthLimit = toCopy.DepthLimit;
             PercentTimeLeftToIncrementDepthLimit = toCopy.PercentTimeLeftToIncrementDepthLimit;
             ReportStatistics = toCopy.ReportStatistics;
@@ -24,8 +22,6 @@ namespace Isolation
             MoveTimeout = TimeSpan.FromSeconds(int.Parse(timeoutInSeconds));
 
             // defaults
-            LoadHeuristicCacheFromDb = false;
-            SaveHeuristicCacheToDb = false;
             PercentTimeLeftToIncrementDepthLimit = 0.90;
             ReportStatistics = true;
             QuiessenceSearch = true;
@@ -51,12 +47,6 @@ namespace Isolation
         // maximum allowed time per move
         public TimeSpan MoveTimeout { get; set; }
 
-        // load pre-computed heuristic evaluation on game start
-        public bool LoadHeuristicCacheFromDb { get; set; }
-
-        // save heursitic evaluation on game end
-        public bool SaveHeuristicCacheToDb { get; set; }
-        
         // how many plys to search
         public int DepthLimit { get; set; }
 

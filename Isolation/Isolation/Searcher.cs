@@ -120,7 +120,6 @@ namespace Isolation
                 {
                     _config.DepthLimit--;
                     _config.GameMode = GameMode.Middle;
-                    HeuristicCache.I.ClearCache();
                 }
             }
             else if (_config.GameMode == GameMode.Middle)
@@ -134,7 +133,6 @@ namespace Isolation
                     {
                         _config.DepthLimit = 30;
                         _config.GameMode = GameMode.End;
-                        HeuristicCache.I.ClearCache();
                     }
                 }
                 else // we don't think we're going to win yet
@@ -144,7 +142,6 @@ namespace Isolation
                     {
                         _config.DepthLimit = 30;
                         _config.GameMode = GameMode.End;
-                        HeuristicCache.I.ClearCache();
                     }
                     // if we think we're going to lose and have some time left, try to find our best move b/c alpha-beta will pick a random one
                     else if (bestMoveResult.Score == int.MinValue && !timedOut)
@@ -197,7 +194,6 @@ namespace Isolation
                         {
                             _config.DepthLimit = 30;
                             _config.GameMode = GameMode.End;
-                            HeuristicCache.I.ClearCache();
                         }
                     }
                 }

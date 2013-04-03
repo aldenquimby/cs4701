@@ -192,6 +192,13 @@ namespace Isolation
                 {
                     longest = pathLength;
                 }
+
+                // fail safe in case this heuristic is used too early
+                // going more than 20 moves deep causes everything to die
+                if (longest > 20)
+                {
+                    break;
+                }
             }
             return longest;
         }
@@ -221,7 +228,8 @@ namespace Isolation
         public override string Name { get { return "LongestPath"; } }
     }
 
-    // Global static heuristic evaluator
+    // TODO: just delete this bad boy
+    // global static heuristic evaluator
     public class HeuristicCache
     {
         #region singleton
@@ -231,62 +239,9 @@ namespace Isolation
 
         #endregion
 
-        private readonly IDictionary<string, IDictionary<string, int>> _cache;
-
-        public HeuristicCache()
-        {
-            _cache = new Dictionary<string, IDictionary<string, int>>();
-        }
-
         public int Evaluate(Board board, HeuristicBase heuristic)
         {
-            if (board == null || heuristic == null)
-            {
-                return 0;
-            }
-
-            var boardString = board.ToFlatString();
-
-            if (_cache.ContainsKey(boardString) && _cache[boardString].ContainsKey(heuristic.Name))
-            {
-                return _cache[boardString][heuristic.Name];
-            }
-                
             return heuristic.Evaluate(board);
-        }
-
-        public void LoadCache(IList<HeuristicDto> dtos)
-        {
-            ClearCache();
-
-            foreach (var dto in dtos)
-            {
-                if (!_cache.ContainsKey(dto.Board))
-                {
-                    _cache[dto.Board] = new Dictionary<string, int>();
-                }
-
-                _cache[dto.Board][dto.Heuristic] = dto.Score;
-            }
-        }
-
-        public void ClearCache()
-        {
-            _cache.Clear();
-        }
-
-        public IList<HeuristicDto> DumpCache()
-        {
-            var heuristics = _cache.SelectMany(kvp => kvp.Value, (kvp, kvp2) => new HeuristicDto
-                {
-                    Board = kvp.Key,
-                    Heuristic = kvp2.Key,
-                    Score = kvp2.Value,
-                }).ToList();
-
-            ClearCache();
-
-            return heuristics;
         }
     }
 }

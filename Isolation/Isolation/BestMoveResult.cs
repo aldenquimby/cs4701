@@ -21,14 +21,6 @@ namespace Isolation
 
         public BoardSpace Move { get; set; }
         public int Score { get; set; }
-
-        public override string ToString()
-        {
-            var builder = new StringBuilder();
-            builder.AppendLine("Move: " + Move);
-            builder.AppendLine("Score: " + Score);
-            return builder.ToString();
-        }
     }
 
     public class BestMoveResultWithStats : IBestMoveResult

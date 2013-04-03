@@ -20,13 +20,6 @@ namespace Isolation
             // get the initial board
             var board = Board.ConstructInitialBoard(myPlayer);
 
-            // load up heuristic cache from db
-            if (config.LoadHeuristicCacheFromDb)
-            {
-                var heuristics = HeuristicSql.I.GetHeuristicCache(board.MyPlayer);
-                HeuristicCache.I.LoadCache(heuristics);
-            }
-
             while (true)
             {
                 // player X moves first
@@ -56,13 +49,6 @@ namespace Isolation
                         break;
                     }
                 }
-            }
-
-            // save heuristic cache to db
-            if (config.SaveHeuristicCacheToDb)
-            {
-                var heuristics = HeuristicCache.I.DumpCache();
-                HeuristicSql.I.SaveHeuristicCache(heuristics, board.MyPlayer);
             }
         }
 
