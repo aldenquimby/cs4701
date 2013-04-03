@@ -18,22 +18,12 @@ namespace Isolation
         public MoveTimer()
         {
             _sw = new Stopwatch();
-        }
-
-        // set time allowed to calculate move
-        public void SetTimeout(TimeSpan time)
-        {
-            _timeout = time;
+            _timeout = TimeSpan.FromSeconds(55); // allowed time to calculate move
         }
 
         public void StartTimer()
         {
             _sw.Restart();
-        }
-
-        public void StopTimer()
-        {
-            _sw.Stop();
         }
 
         public void ResetTimer()

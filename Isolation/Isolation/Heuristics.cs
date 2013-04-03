@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Caching;
 
 namespace Isolation
 {
@@ -13,7 +11,7 @@ namespace Isolation
         public abstract string Name { get; }
     }
     
-    // Number possible moves for me vs. opponent
+    // BEGINNING GAME: Number possible moves for me vs. opponent
     public class NumberOfMovesHeuristic : HeuristicBase
     {
         public override int Evaluate(Board board)
@@ -42,42 +40,47 @@ namespace Isolation
         public override string Name { get { return "NumberOfMoves"; } }
     }
 
-    // Number of empty spaces reachable by me vs. opponent
+    // MIDDLE GAME: Number of empty spaces in area surrounding me vs. opponent
     public class OpenAreaHeuristic : HeuristicBase
     {
-        private IEnumerable<BoardSpace> GetSurroundingSpaces(BoardSpace space)
+        private static IEnumerable<BoardSpace> GetSurroundingSpaces(BoardSpace space)
         {
+            var higherRow = (byte)(space.Row + 1);
+            var lowerRow = (byte)(space.Row - 1);
+            var higherCol = (byte)(space.Col + 1);
+            var lowerCol = (byte)(space.Col - 1);
+
             if (space.Row > 0)
             {
-                yield return new BoardSpace((byte)(space.Row - 1), space.Col);
+                yield return new BoardSpace(lowerRow, space.Col);
 
                 if (space.Col > 0)
                 {
-                    yield return new BoardSpace((byte)(space.Row - 1), (byte)(space.Col - 1));
-                    yield return new BoardSpace(space.Row, (byte)(space.Col - 1));
+                    yield return new BoardSpace(lowerRow, lowerCol);
+                    yield return new BoardSpace(space.Row, lowerCol);
                 }
                 if (space.Col < 7)
                 {
-                    yield return new BoardSpace((byte)(space.Row - 1), (byte)(space.Col + 1));
-                    yield return new BoardSpace(space.Row, (byte)(space.Col + 1));
+                    yield return new BoardSpace(lowerRow, higherCol);
+                    yield return new BoardSpace(space.Row, higherCol);
                 }
             }
             if (space.Row < 7)
             {
-                yield return new BoardSpace((byte)(space.Row + 1), space.Col);
+                yield return new BoardSpace(higherRow, space.Col);
 
                 if (space.Col > 0)
                 {
-                    yield return new BoardSpace((byte)(space.Row + 1), (byte)(space.Col - 1));
+                    yield return new BoardSpace(higherRow, lowerCol);
                 }
                 if (space.Col < 7)
                 {
-                    yield return new BoardSpace((byte)(space.Row + 1), (byte)(space.Col + 1));
+                    yield return new BoardSpace(higherRow, higherCol);
                 }
             }
         } 
 
-        private HashSet<BoardSpace> GetOpenArea(Board board, Player player)
+        private static HashSet<BoardSpace> GetOpenArea(Board board, Player player)
         {
             var initialPosition = player == Player.X ? board.Xposition : board.Oposition;
 
@@ -101,6 +104,7 @@ namespace Isolation
                     // mark this sapce as seen
                     closed.Add(successor);
 
+                    // if it's empty, mark it as accessible, and set it up for expansion
                     if (board[successor.Row, successor.Col] == BoardSpaceValue.Empty)
                     {
                         accessible.Add(successor);
@@ -115,8 +119,16 @@ namespace Isolation
         public override int Evaluate(Board board)
         {
             var myOpenArea = GetOpenArea(board, board.MyPlayer);
+
+            // if i can't move and it's my turn, i lose
+            if (myOpenArea.Count == 0 && board.PlayerToMove == board.MyPlayer)
+            {
+                return int.MinValue;
+            }
+
             var opponentOpenArea = GetOpenArea(board, board.OpponentPlayer);
 
+            // if we both can't move, whoever is supposed to move loses
             if (myOpenArea.Count == 0 && opponentOpenArea.Count == 0)
             {
                 return board.PlayerToMove == board.MyPlayer ? int.MinValue : int.MaxValue;
@@ -151,6 +163,103 @@ namespace Isolation
         public override string Name { get { return "OpenArea"; } }
     }
 
+    // END GAME: Longest walkable path for me vs. opponent, always returns +infinity or -infinity
+    public class LongestPathHeuristic : HeuristicBase
+    {
+        // count max number of moves you could make if the board froze right now, assume other player doesn't move
+        public static int LongestPathLength(Board board, Player player)
+        {
+            if (player == Player.X)
+            {
+                return LongestPathLengthInternal(board, x => x.GetMoves(x.Xposition), (x, y) => x.MoveX(y));
+            }
+            else
+            {
+                return LongestPathLengthInternal(board, x => x.GetMoves(x.Oposition), (x, y) => x.MoveO(y));
+            }
+        }
+
+        private static int LongestPathLengthInternal(Board board, Func<Board, IEnumerable<BoardSpace>> moveGetter, Action<Board, BoardSpace> makeMove)
+        {
+            var longest = 0;
+            foreach (var move in moveGetter(board))
+            {
+                var newBoard = board.Copy();
+                makeMove(newBoard, move);
+
+                var child = LongestPathLengthInternal(newBoard, moveGetter, makeMove) + 1;
+                if (child > longest)
+                {
+                    longest = child;
+                }
+            }
+            return longest;
+        }
+
+        public static Tuple<int, BoardSpace> NextMoveOnLongestPath(Board board, Player player)
+        {
+            Tuple<int, List<Tuple<Board, BoardSpace>>> result;
+
+            if (player == Player.X)
+            {
+                result = LongestPathInternal(board, x => x.GetMoves(x.Xposition), (x, y) => x.MoveX(y));
+            }
+            else
+            {
+                result = LongestPathInternal(board, x => x.GetMoves(x.Oposition), (x, y) => x.MoveO(y));
+            }
+
+            var pathLength = result.Item1;
+            var backwardsPath = result.Item2;
+
+            return Tuple.Create(pathLength, backwardsPath.Count > 0 ? backwardsPath.Last().Item2 : null);
+        }
+
+        private static Tuple<int, List<Tuple<Board, BoardSpace>>> LongestPathInternal(Board board, Func<Board, IEnumerable<BoardSpace>> moveGetter, Action<Board, BoardSpace> makeMove)
+        {
+            var longest = 0;
+            var boards = new List<Tuple<Board, BoardSpace>>();
+            foreach (var move in moveGetter(board))
+            {
+                var newBoard = board.Copy();
+                makeMove(newBoard, move);
+
+                var child = LongestPathInternal(newBoard, moveGetter, makeMove);
+                var childScore = child.Item1 + 1;
+                if (childScore > longest)
+                {
+                    longest = childScore;
+                    boards = new List<Tuple<Board, BoardSpace>>(child.Item2){Tuple.Create(newBoard, move)};
+                }
+            }
+            return Tuple.Create(longest, boards);
+        }
+
+        public override int Evaluate(Board board)
+        {
+            var myLongestPath = LongestPathLength(board, board.MyPlayer);
+
+            // if my path is 0 and it's my turn, i lose
+            if (myLongestPath == 0 && board.PlayerToMove == board.MyPlayer)
+            {
+                return int.MinValue;
+            }
+
+            var opponentLongestPath = LongestPathLength(board, board.OpponentPlayer);
+
+            // if we have the same longest path, whoever is supposed to move next will lose
+            if (myLongestPath == opponentLongestPath)
+            {
+                return board.PlayerToMove == board.MyPlayer ? int.MinValue : int.MaxValue;
+            }
+
+            // whoever has a longer path wins
+            return myLongestPath > opponentLongestPath ? int.MaxValue : int.MinValue;
+        }
+
+        public override string Name { get { return "LongestPath"; } }
+    }
+
     // Global static heuristic evaluator
     public class HeuristicCache
     {
@@ -165,12 +274,7 @@ namespace Isolation
 
         public HeuristicCache()
         {
-            _cache = new ConcurrentDictionary<string, IDictionary<string, int>>();
-        }
-
-        public void DumpKeyCount()
-        {
-            Console.WriteLine(_cache.Keys.Count);
+            _cache = new Dictionary<string, IDictionary<string, int>>();
         }
 
         public int Evaluate(Board board, HeuristicBase heuristic)
@@ -182,39 +286,17 @@ namespace Isolation
 
             var boardString = board.ToFlatString();
 
-            //if (_cache.Keys.Count > 10000000)
-            //{
-            //    if (_cache.ContainsKey(boardString) && _cache[boardString].ContainsKey(heuristic.Name))
-            //    {
-            //        return _cache[boardString][heuristic.Name];
-            //    }
-            //    else
-            //    {
-            //        return heuristic.Evaluate(board);
-            //    }
-            //}
-
-            if (!_cache.ContainsKey(boardString))
+            if (_cache.ContainsKey(boardString) && _cache[boardString].ContainsKey(heuristic.Name))
             {
-                _cache[boardString] = new ConcurrentDictionary<string, int>();
+                return _cache[boardString][heuristic.Name];
             }
-
-            if (!_cache[boardString].ContainsKey(heuristic.Name))
-            {
-                _cache[boardString][heuristic.Name] = heuristic.Evaluate(board);
-            }
-
-            return _cache[boardString][heuristic.Name];
-        }
-
-        public void RemoveFromCache(Board board)
-        {
-            _cache.Remove(board.ToFlatString());
+                
+            return heuristic.Evaluate(board);
         }
 
         public void LoadCache(IList<HeuristicDto> dtos)
         {
-            _cache.Clear();
+            ClearCache();
 
             foreach (var dto in dtos)
             {
@@ -227,6 +309,11 @@ namespace Isolation
             }
         }
 
+        public void ClearCache()
+        {
+            _cache.Clear();
+        }
+
         public IList<HeuristicDto> DumpCache()
         {
             var heuristics = _cache.SelectMany(kvp => kvp.Value, (kvp, kvp2) => new HeuristicDto
@@ -236,7 +323,7 @@ namespace Isolation
                     Score = kvp2.Value,
                 }).ToList();
 
-            _cache.Clear();
+            ClearCache();
 
             return heuristics;
         }

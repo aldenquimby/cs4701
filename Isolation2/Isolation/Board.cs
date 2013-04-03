@@ -6,38 +6,6 @@ namespace Isolation
 {
     public class Board : IEquatable<Board>
     {
-        //TODO: delete this before handing in
-        public Board(string flatBoard, Player myPlayer) : this()
-        {
-            if (flatBoard.Length != 64)
-            {
-                throw new ArgumentException("Invalid board.");
-            }
-
-            Initialize(myPlayer);
-
-            for (byte i = 0; i < 8; i++)
-            {
-                _board[i] = new BoardSpaceValue[8];
-                for (byte j = 0; j < 8; j++)
-                {
-                    var space = GetSpaceFromChar(flatBoard[i * 8 + j]);
-                    _board[i][j] = space;
-
-                    if (space == BoardSpaceValue.PlayerX)
-                    {
-                        Xposition = new BoardSpace(i, j);
-                    }
-                    else if (space == BoardSpaceValue.PlayerO)
-                    {
-                        Oposition = new BoardSpace(i, j);
-                    }
-                }
-            }
-
-            PlayerToMove = GetEmptySpacesRemaining() % 2 == 0 ? Player.X : Player.O;
-        }
-
         private readonly BoardSpaceValue[][] _board;
 
         public BoardSpace LastMove { get; private set; }
@@ -58,7 +26,7 @@ namespace Isolation
             MyPlayer = myPlayer;
             OpponentPlayer = MyPlayer == Player.X ? Player.O : Player.X;
         }
-
+        
         private Board()
         {
             _board = new BoardSpaceValue[8][];
@@ -135,30 +103,20 @@ namespace Isolation
         {
             if (PlayerToMove == Player.X)
             {
-                MoveX(move);
+                _board[Xposition.Row][Xposition.Col] = BoardSpaceValue.Filled;
+                _board[move.Row][move.Col] = BoardSpaceValue.PlayerX;
+                Xposition = move;
                 PlayerToMove = Player.O;
             }
             else
             {
-                MoveO(move);
+                _board[Oposition.Row][Oposition.Col] = BoardSpaceValue.Filled;
+                _board[move.Row][move.Col] = BoardSpaceValue.PlayerO;
+                Oposition = move;
                 PlayerToMove = Player.X;
             }
             LastMove = move;
             return this;
-        }
-
-        public void MoveX(BoardSpace move)
-        {
-            _board[Xposition.Row][Xposition.Col] = BoardSpaceValue.Filled;
-            _board[move.Row][move.Col] = BoardSpaceValue.PlayerX;
-            Xposition = move;
-        }
-
-        public void MoveO(BoardSpace move)
-        {
-            _board[Oposition.Row][Oposition.Col] = BoardSpaceValue.Filled;
-            _board[move.Row][move.Col] = BoardSpaceValue.PlayerO;
-            Oposition = move;
         }
 
         #endregion
@@ -169,7 +127,7 @@ namespace Isolation
         {
             return PlayerToMove == Player.X ? GetMoves(Xposition) : GetMoves(Oposition);
         }
-
+        
         public IEnumerable<BoardSpace> GetMyValidMoves()
         {
             return MyPlayer == Player.X ? GetMoves(Xposition) : GetMoves(Oposition);
@@ -180,7 +138,7 @@ namespace Isolation
             return MyPlayer == Player.X ? GetMoves(Oposition) : GetMoves(Xposition);
         }
 
-        public IEnumerable<BoardSpace> GetMoves(BoardSpace currentPosition)
+        private IEnumerable<BoardSpace> GetMoves(BoardSpace currentPosition)
         {
             #region vertical moves
 
@@ -273,7 +231,7 @@ namespace Isolation
             }
 
             #endregion
-        }
+        } 
 
         #endregion
 

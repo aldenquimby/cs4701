@@ -1,47 +1,29 @@
-﻿using System;
-
-namespace Isolation
+﻿namespace Isolation
 {
     public class SearchConfig
     {
-        public SearchConfig(SearchConfig toCopy)
-        {
-            LoadHeuristicCacheFromDb = toCopy.LoadHeuristicCacheFromDb;
-            SaveHeuristicCacheToDb = toCopy.SaveHeuristicCacheToDb;
-            DepthLimit = toCopy.DepthLimit;
-            PercentTimeLeftToIncrementDepthLimit = toCopy.PercentTimeLeftToIncrementDepthLimit;
-            ReportStatistics = toCopy.ReportStatistics;
-            QuiessenceSearch = toCopy.QuiessenceSearch;
-            Heuristic = toCopy.Heuristic;
-            MoveTimeout = toCopy.MoveTimeout;
-            GameMode = toCopy.GameMode;
-        }
-
         public SearchConfig(string input)
         {
+            //TODO: input should be timeout in seconds
+
             // defaults
             LoadHeuristicCacheFromDb = false;
             SaveHeuristicCacheToDb = false;
             DepthLimit = 7;
-            PercentTimeLeftToIncrementDepthLimit = 0.90;
+            PercentTimeLeftToIncrementDepthLimit = 0.92;
             ReportStatistics = true;
             QuiessenceSearch = true;
             Heuristic = new NumberOfMovesHeuristic();
-            MoveTimeout = TimeSpan.FromSeconds(55); // TODO: get this from std in
-            GameMode = GameMode.Beginning;
 
             // from input
             if ("1".Equals(input))
             {
-                DepthLimit = 7;
+                DepthLimit = 5;
                 QuiessenceSearch = false;
                 //PercentTimeLeftToIncrementDepthLimit = 1;
                 //SortMovesAsc = false;
             }
         }
-
-        // maximum allowed time per move
-        public TimeSpan MoveTimeout { get; set; }
 
         // load pre-computed heuristic evaluation on game start
         public bool LoadHeuristicCacheFromDb { get; set; }
@@ -63,8 +45,5 @@ namespace Isolation
 
         // heuristic evaluator to use when searching
         public HeuristicBase Heuristic { get; set; }
-
-        // beginning, middle, or end game
-        public GameMode GameMode { get; set; }
     }
 }

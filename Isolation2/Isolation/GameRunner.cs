@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Isolation
@@ -109,8 +111,6 @@ namespace Isolation
         // perform my next move on the board
         private static bool MyMove(Board board)
         {
-            Console.WriteLine(board.ToString());
-
             var myMove = Searcher.I.GetMyNextMove(board);
 
             if (myMove == null)
@@ -121,27 +121,38 @@ namespace Isolation
 
             Console.WriteLine("My move:");
             Console.WriteLine(myMove.ToString());
+
+            // reduce CPU now that move is over
+            Process.GetCurrentProcess().PriorityBoostEnabled = false;
+            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.Normal;
+
+            foreach (var move in board.GetValidMoves())
+            {
+                var newBoard = board.Copy().Move(move);
+                foreach (var childBoard in newBoard.GetValidMoves().Select(x => board.Copy().Move(x)))
+                {
+                    HeuristicCache.I.RemoveFromCache(childBoard);
+                }
+                HeuristicCache.I.RemoveFromCache(newBoard);
+            }
+
             board.Move(myMove);
+
             return true;
         }
 
         // perform opponents next move on the board
-        private static bool OpponentMove(Board board, bool preComputeMyMove = true)
+        private static bool OpponentMove(Board board)
         {
-            Console.WriteLine(board.ToString());
-
-            if (preComputeMyMove)
-            {
-                // start evaluation for my next move on a bunch of new threads
-                Searcher.I.PreComputeNextMove(board);
-            }
-
             // if opponent can't move, i win!
             if (!board.GetOpponentValidMoves().Any())
             {
                 Console.WriteLine("Opponent cannot move!");
                 return false;
             }
+
+            // start evaluation for next move while we wait for opponent
+            Searcher.I.PreComputeNextMove(board);
 
             // ask for move
             var move = GetOpponentMove();
@@ -166,7 +177,7 @@ namespace Isolation
                 }
 
                 // otherwise it was a mistake, so let's try again
-                return OpponentMove(board, false);
+                return OpponentMove(board);
             }
 
             // confirm move is correct, which is equivalent to rollback functionality
@@ -174,7 +185,7 @@ namespace Isolation
             Console.WriteLine("Should I continue? 'undo' to rollback the last move, anything else to continue.");
             if ("undo".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
             {
-                return OpponentMove(board, false);
+                return OpponentMove(board);
             }
 
             // now that we know it's valid, and we've asked if they want to undo, perform move

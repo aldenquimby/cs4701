@@ -13,11 +13,4 @@
         PlayerX = 4,
         PlayerO = 8,
     }
-
-    public enum GameMode : byte
-    {
-        Beginning = 1,
-        Middle = 2,
-        End = 3,
-    }
 }
