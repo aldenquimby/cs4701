@@ -12,9 +12,11 @@ namespace Isolation
             PercentTimeLeftToIncrementDepthLimit = toCopy.PercentTimeLeftToIncrementDepthLimit;
             ReportStatistics = toCopy.ReportStatistics;
             QuiessenceSearch = toCopy.QuiessenceSearch;
-            Heuristic = toCopy.Heuristic;
             MoveTimeout = toCopy.MoveTimeout;
             GameMode = toCopy.GameMode;
+            _beginningHeuristic = toCopy._beginningHeuristic;
+            _middleHeuristic = toCopy._middleHeuristic;
+            _endHeuristic = toCopy._endHeuristic;
         }
 
         public SearchConfig(string input)
@@ -26,15 +28,17 @@ namespace Isolation
             PercentTimeLeftToIncrementDepthLimit = 0.90;
             ReportStatistics = true;
             QuiessenceSearch = true;
-            Heuristic = new NumberOfMovesHeuristic();
             MoveTimeout = TimeSpan.FromSeconds(55); // TODO: get this from std in
             GameMode = GameMode.Beginning;
+            _beginningHeuristic = new NumberOfMovesHeuristic();
+            _middleHeuristic = new OpenAreaHeuristic();
+            _endHeuristic = new LongestPathHeuristic();
 
             // from input
             if ("1".Equals(input))
             {
-                DepthLimit = 7;
                 QuiessenceSearch = false;
+                _middleHeuristic = new NumberOfMovesHeuristic();
                 //PercentTimeLeftToIncrementDepthLimit = 1;
                 //SortMovesAsc = false;
             }
@@ -61,8 +65,28 @@ namespace Isolation
         // quiessence search: extend depth if nodes look interesting
         public bool QuiessenceSearch { get; set; }
 
+        private readonly HeuristicBase _beginningHeuristic;
+        private readonly HeuristicBase _middleHeuristic;
+        private readonly HeuristicBase _endHeuristic;
+
         // heuristic evaluator to use when searching
-        public HeuristicBase Heuristic { get; set; }
+        public HeuristicBase Heuristic
+        {
+            get
+            {
+                switch (GameMode)
+                {
+                    case GameMode.Beginning:
+                        return _beginningHeuristic;
+                    case GameMode.Middle:
+                        return _middleHeuristic;
+                    case GameMode.End:
+                        return _endHeuristic;
+                    default:
+                        return _beginningHeuristic;
+                }
+            }
+        }
 
         // beginning, middle, or end game
         public GameMode GameMode { get; set; }

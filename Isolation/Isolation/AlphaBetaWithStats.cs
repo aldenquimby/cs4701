@@ -43,40 +43,7 @@ namespace Isolation
             return result;
         }
 
-        private bool IsInterestingMove(Board originalBoard, Board newBoard)
-        {
-            // if no quiessence search configured, nothing is interesting
-            if (!_config.QuiessenceSearch)
-            {
-                return false;
-            }
-
-            // prevent infinite quiessence search with hard coded max generation (should never reach this though)
-            if (_numNodesQuiessenceSearched > 2000*_config.DepthLimit)
-            {
-                return false;
-            }
-
-            var originalScore = _evaluator.Evaluate(originalBoard, _config.Heuristic);
-            var newScore = _evaluator.Evaluate(newBoard, _config.Heuristic);
-
-            // must go from negative to positive or positive to negative
-            if (!((originalScore > 0 && newScore < 0) || (originalScore < 0 && newScore > 0)))
-            {
-                return false;
-            }
-
-            var percent1 = ((double)(newScore - originalScore) / newScore);
-            var percent2 = ((double)(originalScore - newScore) / originalScore);
-
-            var interestingScoreChange = _config.DepthLimit + 1.5;
-
-            // must have large enough percent change
-            return percent1 > interestingScoreChange || percent1 < -interestingScoreChange ||
-                   percent2 > interestingScoreChange || percent2 < -interestingScoreChange;
-        }
-
-        // INITIAL CALL NEEDS -inifinity alpha, infinity beta
+        // recursive alpha beta
         private BestMoveResultWithStats BestMoveInternal(Board board, int depth, int alpha, int beta, CancellationToken cancelToken)
         {
             // if we reached the bottom, return
@@ -98,18 +65,22 @@ namespace Isolation
 
             BoardSpace bestMove = null;
 
-            // generate new boards for each move
-            var validMovesWithBoard = validMoves.Select(x => new {move = x, newBoard = board.Copy().Move(x)});
+            // generate new boards for each move and evaluate them so we can sort
+            var validMovesWithBoard = validMoves.Select(x => new { move = x, newBoard = board.Copy().Move(x) })
+                                                .Select(x => new { x.move, x.newBoard, score = _evaluator.Evaluate(x.newBoard, _config.Heuristic) });
 
-            // sort move list only if we're not near the bottom of the tree, because it's expensive
+            // if we're maxing, sort with largest first, otherwise sort with smallest first
             if (isMaxTurn)
             {
-                validMovesWithBoard = validMovesWithBoard.OrderByDescending(x => _evaluator.Evaluate(x.newBoard, _config.Heuristic));
+                validMovesWithBoard = validMovesWithBoard.OrderByDescending(x => x.score);
             }
             else
             {
-                validMovesWithBoard = validMovesWithBoard.OrderBy(x => _evaluator.Evaluate(x.newBoard, _config.Heuristic));
+                validMovesWithBoard = validMovesWithBoard.OrderBy(x => x.score);
             }
+
+            // if we're doing a quiessence search, evaluate this board because we'll need to for all children
+            var boardScore = _config.QuiessenceSearch ? _evaluator.Evaluate(board, _config.Heuristic) : new int?();
 
             foreach (var move in validMovesWithBoard)
             {
@@ -117,8 +88,8 @@ namespace Isolation
 
                 BestMoveResultWithStats childResult;
 
-                // check quiessence search
-                if (IsInterestingMove(board, move.newBoard))
+                // if we're doing a quiessence search, check to see if heuristic score change is interesting
+                if (boardScore != null && IsInterestingMove(boardScore.Value, move.score))
                 {
                     // extend search depth because this move looks interesting
                     _numNodesQuiessenceSearched++;
@@ -168,6 +139,36 @@ namespace Isolation
             }
 
             return new BestMoveResultWithStats(isMaxTurn ? alpha : beta, bestMove);
+        }
+
+        public bool IsInterestingMove(int originalScore, int newScore)
+        {
+            // if no quiessence search configured, nothing is interesting
+            if (!_config.QuiessenceSearch)
+            {
+                return false;
+            }
+
+            // prevent infinite quiessence search with hard coded max generation (should never reach this though)
+            if (_numNodesQuiessenceSearched > 2000 * _config.DepthLimit)
+            {
+                return false;
+            }
+
+            // must go from negative to positive or positive to negative
+            if (!((originalScore > 0 && newScore < 0) || (originalScore < 0 && newScore > 0)))
+            {
+                return false;
+            }
+
+            var percent1 = ((double)(newScore - originalScore) / newScore);
+            var percent2 = ((double)(originalScore - newScore) / originalScore);
+
+            var interestingScoreChange = _config.DepthLimit + 1.4;
+
+            // must have large enough percent change
+            return percent1 > interestingScoreChange || percent1 < -interestingScoreChange ||
+                   percent2 > interestingScoreChange || percent2 < -interestingScoreChange;
         }
     }
 }
