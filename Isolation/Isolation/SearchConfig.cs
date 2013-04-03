@@ -19,23 +19,26 @@ namespace Isolation
             _endHeuristic = toCopy._endHeuristic;
         }
 
-        public SearchConfig(string input)
+        public SearchConfig(string timeoutInSeconds)
         {
+            MoveTimeout = TimeSpan.FromSeconds(int.Parse(timeoutInSeconds));
+
             // defaults
             LoadHeuristicCacheFromDb = false;
             SaveHeuristicCacheToDb = false;
-            DepthLimit = 7;
             PercentTimeLeftToIncrementDepthLimit = 0.90;
             ReportStatistics = true;
             QuiessenceSearch = true;
-            MoveTimeout = TimeSpan.FromSeconds(55); // TODO: get this from std in
             GameMode = GameMode.Beginning;
             _beginningHeuristic = new NumberOfMovesHeuristic();
             _middleHeuristic = new OpenAreaHeuristic();
             _endHeuristic = new LongestPathHeuristic();
 
-            // from input
-            if ("1".Equals(input))
+            // depth limit is based on timeout
+            DepthLimit = MoveTimeout.TotalSeconds > 45 ? 8 : 7;
+
+            // from timeoutInSeconds
+            if ("59".Equals(timeoutInSeconds))
             {
                 QuiessenceSearch = false;
                 _middleHeuristic = new NumberOfMovesHeuristic();
@@ -65,11 +68,13 @@ namespace Isolation
         // quiessence search: extend depth if nodes look interesting
         public bool QuiessenceSearch { get; set; }
 
+        // beginning, middle, or end game
+        public GameMode GameMode { get; set; }
+
+        // heuristic evaluator to use when searching, depends on game mode
         private readonly HeuristicBase _beginningHeuristic;
         private readonly HeuristicBase _middleHeuristic;
         private readonly HeuristicBase _endHeuristic;
-
-        // heuristic evaluator to use when searching
         public HeuristicBase Heuristic
         {
             get
@@ -87,8 +92,5 @@ namespace Isolation
                 }
             }
         }
-
-        // beginning, middle, or end game
-        public GameMode GameMode { get; set; }
     }
 }

@@ -26,10 +26,8 @@ namespace Isolation
                 {
                     return () => new LongestPath();
                 }
-                else
-                {
-                    return () => new AlphaBetaWithStats();
-                }
+                
+                return () => new AlphaBetaWithStats();
             }
         }
 
@@ -118,7 +116,7 @@ namespace Isolation
             // figure out where we are in the game
             if (_config.GameMode == GameMode.Beginning)
             {
-                if (emptySpaces <= 41)
+                if (emptySpaces <= 40)
                 {
                     _config.DepthLimit--;
                     _config.GameMode = GameMode.Middle;
@@ -139,61 +137,69 @@ namespace Isolation
                         HeuristicCache.I.ClearCache();
                     }
                 }
-                // if we think we're going to lose and have some time left, try to find our best move b/c alpha-beta will pick a random one
-                else if (bestMoveResult.Score == int.MinValue && !timedOut)
+                else // we don't think we're going to win yet
                 {
-                    //TODO: this isn't working...
-                    Console.WriteLine("Oh snap! I think I'm going to lose!");
-
-                    var tasksByDepthLimit = new Dictionary<int, AsyncSearchTask>();
-
-                    // simultaneously search at smaller depths to get our best move that isn't -infinity
-                    for (var newDepthLimit = _config.DepthLimit - 1; newDepthLimit > 0; newDepthLimit--)
-                    {
-                        var newConfig = new SearchConfig(_config) { DepthLimit = newDepthLimit };
-
-                        // new task with timeout set at our remaining time
-                        var task = new AsyncSearchTask(_config.MoveTimeout.Subtract(elapsed));
-
-                        task.BestMoveTask = Task.Factory.StartNew(() =>
-                        {
-                            task.Timer.StartTimer();
-                            var result = MoveGetter().BestMove(board, newConfig, task.Timer, task.CancelSource.Token);
-                            task.Timer.StopTimer();
-                            return result;
-                        }, task.CancelSource.Token);
-                    }
-
-                    foreach (var kvp in tasksByDepthLimit.OrderBy(x => x.Key))
-                    {
-                        var newBestMove = kvp.Value.BestMoveTask.Result;
-
-                        // if we think we're going to lose or we timed out, cancel all deeper tasks because they will also think we're going to lose
-                        if (newBestMove.Score == int.MinValue || kvp.Value.Timer.Timeout())
-                        {
-                            var kvpClosure = kvp;
-                            foreach (var task in tasksByDepthLimit.Where(x => x.Key > kvpClosure.Key).Select(x => x.Value))
-                            {
-                                task.CancelSource.Cancel();
-                            }
-                            break;
-                        }
-
-                        if (newBestMove.Score > bestMoveResult.Score)
-                        {
-                            Console.WriteLine("Changing best move from old!");
-                            Console.WriteLine(bestMoveResult.ToString());
-                            bestMoveResult = newBestMove;
-                        }
-                    }
-                }
-                else // we don't think we're going to win or lose yet, maybe switch to end game
-                {
+                    // if it's time for end game, switch
                     if (emptySpaces <= 28)
                     {
-                        _config.DepthLimit = 28;
+                        _config.DepthLimit = 30;
                         _config.GameMode = GameMode.End;
                         HeuristicCache.I.ClearCache();
+                    }                
+                    // if we think we're going to lose and have some time left, try to find our best move b/c alpha-beta will pick a random one
+                    else if (bestMoveResult.Score == int.MinValue && !timedOut)
+                    {
+                        var tasksByDepthLimit = new Dictionary<int, AsyncSearchTask>();
+
+                        // simultaneously search at smaller depths to get our best move that isn't -infinity
+                        for (var newDepthLimit = _config.DepthLimit - 1; newDepthLimit > 0; newDepthLimit--)
+                        {
+                            var newConfig = new SearchConfig(_config) { DepthLimit = newDepthLimit };
+
+                            // new task with timeout set at our remaining time
+                            var task = new AsyncSearchTask(_config.MoveTimeout.Subtract(elapsed));
+
+                            task.BestMoveTask = Task.Factory.StartNew(() =>
+                            {
+                                task.Timer.StartTimer();
+                                var result = MoveGetter().BestMove(board, newConfig, task.Timer, task.CancelSource.Token);
+                                task.Timer.StopTimer();
+                                return result;
+                            }, task.CancelSource.Token);
+
+                            tasksByDepthLimit[newDepthLimit] = task;
+                        }
+
+                        foreach (var kvp in tasksByDepthLimit.OrderBy(x => x.Key))
+                        {
+                            var newBestMove = kvp.Value.BestMoveTask.Result;
+
+                            // if we think we're going to lose or we timed out, cancel all deeper tasks because they will also think we're going to lose
+                            if (newBestMove.Score == int.MinValue || kvp.Value.Timer.Timeout())
+                            {
+                                var kvpClosure = kvp;
+                                foreach (var task in tasksByDepthLimit.Where(x => x.Key > kvpClosure.Key).Select(x => x.Value).Where(x => !x.BestMoveTask.IsCompleted))
+                                {
+                                    task.CancelSource.Cancel();
+                                }
+                                break;
+                            }
+
+                            if (newBestMove.Score > bestMoveResult.Score)
+                            {
+                                Console.WriteLine("Changing best move from old!");
+                                Console.WriteLine(bestMoveResult.ToString());
+                                bestMoveResult = newBestMove;
+                            }
+                        }
+
+                        // if we still think we're gauarenteed to lose, switch to end game to maximize moves left
+                        if (bestMoveResult.Score == int.MinValue) 
+                        {
+                            _config.DepthLimit = 30;
+                            _config.GameMode = GameMode.End;
+                            HeuristicCache.I.ClearCache();
+                        }
                     }
                 }
             }
@@ -204,7 +210,7 @@ namespace Isolation
         public void PreComputeNextMove(Board board)
         {
             // cancel any tasks that are running from last round
-            foreach (var task in _tasksByOpponentMove.Select(x => x.Value).Where(x => !x.BestMoveTask.IsCanceled))
+            foreach (var task in _tasksByOpponentMove.Select(x => x.Value).Where(x => !x.BestMoveTask.IsCompleted))
             {
                 task.CancelSource.Cancel();
             }

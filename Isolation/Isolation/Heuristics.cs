@@ -43,6 +43,42 @@ namespace Isolation
     // MIDDLE GAME: Number of empty spaces in area surrounding me vs. opponent
     public class OpenAreaHeuristic : HeuristicBase
     {
+        public static HashSet<BoardSpace> GetOpenArea(Board board, Player player)
+        {
+            var initialPosition = player == Player.X ? board.Xposition : board.Oposition;
+
+            var toExamine = new Queue<BoardSpace>(new[] { initialPosition });
+            var closed = new HashSet<BoardSpace> { initialPosition };
+            var accessible = new HashSet<BoardSpace>();
+
+            while (toExamine.Count > 0)
+            {
+                var space = toExamine.Dequeue();
+
+                // enqueue empty spaces immediately next to this space
+                foreach (var successor in GetSurroundingSpaces(space))
+                {
+                    // skip spaces we've seen
+                    if (closed.Contains(successor))
+                    {
+                        continue;
+                    }
+
+                    // mark this sapce as seen
+                    closed.Add(successor);
+
+                    // if it's empty, mark it as accessible, and set it up for expansion
+                    if (board[successor.Row, successor.Col] == BoardSpaceValue.Empty)
+                    {
+                        accessible.Add(successor);
+                        toExamine.Enqueue(successor);
+                    }
+                }
+            }
+
+            return accessible;
+        }
+
         private static IEnumerable<BoardSpace> GetSurroundingSpaces(BoardSpace space)
         {
             var higherRow = (byte)(space.Row + 1);
@@ -79,42 +115,6 @@ namespace Isolation
                 }
             }
         } 
-
-        private static HashSet<BoardSpace> GetOpenArea(Board board, Player player)
-        {
-            var initialPosition = player == Player.X ? board.Xposition : board.Oposition;
-
-            var toExamine = new Queue<BoardSpace>(new []{initialPosition});
-            var closed = new HashSet<BoardSpace>{initialPosition};
-            var accessible = new HashSet<BoardSpace>();
-
-            while (toExamine.Count > 0)
-            {
-                var space = toExamine.Dequeue();
-
-                // enqueue empty spaces immediately next to this space
-                foreach (var successor in GetSurroundingSpaces(space))
-                {
-                    // skip spaces we've seen
-                    if (closed.Contains(successor))
-                    {
-                        continue;
-                    }
-
-                    // mark this sapce as seen
-                    closed.Add(successor);
-
-                    // if it's empty, mark it as accessible, and set it up for expansion
-                    if (board[successor.Row, successor.Col] == BoardSpaceValue.Empty)
-                    {
-                        accessible.Add(successor);
-                        toExamine.Enqueue(successor);
-                    }
-                }
-            }
-
-            return accessible;
-        }
 
         public override int Evaluate(Board board)
         {
@@ -194,45 +194,6 @@ namespace Isolation
                 }
             }
             return longest;
-        }
-
-        public static Tuple<int, BoardSpace> NextMoveOnLongestPath(Board board, Player player)
-        {
-            Tuple<int, List<Tuple<Board, BoardSpace>>> result;
-
-            if (player == Player.X)
-            {
-                result = LongestPathInternal(board, x => x.GetMoves(x.Xposition), (x, y) => x.MoveX(y));
-            }
-            else
-            {
-                result = LongestPathInternal(board, x => x.GetMoves(x.Oposition), (x, y) => x.MoveO(y));
-            }
-
-            var pathLength = result.Item1;
-            var backwardsPath = result.Item2;
-
-            return Tuple.Create(pathLength, backwardsPath.Count > 0 ? backwardsPath.Last().Item2 : null);
-        }
-
-        private static Tuple<int, List<Tuple<Board, BoardSpace>>> LongestPathInternal(Board board, Func<Board, IEnumerable<BoardSpace>> moveGetter, Action<Board, BoardSpace> makeMove)
-        {
-            var longest = 0;
-            var boards = new List<Tuple<Board, BoardSpace>>();
-            foreach (var move in moveGetter(board))
-            {
-                var newBoard = board.Copy();
-                makeMove(newBoard, move);
-
-                var child = LongestPathInternal(newBoard, moveGetter, makeMove);
-                var childScore = child.Item1 + 1;
-                if (childScore > longest)
-                {
-                    longest = childScore;
-                    boards = new List<Tuple<Board, BoardSpace>>(child.Item2){Tuple.Create(newBoard, move)};
-                }
-            }
-            return Tuple.Create(longest, boards);
         }
 
         public override int Evaluate(Board board)

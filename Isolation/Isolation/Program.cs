@@ -7,10 +7,30 @@ namespace Isolation
 {
     public class Program
     {
+        static void TestEndGameTransition()
+        {
+            const string boardString = "* * - * - * - -" +
+                                       "- - - - * - - -" +
+                                       "- - * * * - * -" +
+                                       "* * - - * * * -" +
+                                       "- * * * * o - *" +
+                                       "* * - * * * * *" +
+                                       "* * - - - * * -" +
+                                       "- * - - * - - x";
+
+            var board = new Board(new string(boardString.Where(x => !char.IsWhiteSpace(x)).ToArray()), Player.X);
+
+            var searcher = new Searcher();
+            searcher.Initialize(new SearchConfig("60"){DepthLimit = 19, GameMode = GameMode.Middle});
+            var searchResult = searcher.GetMyNextMove(board);
+            Console.WriteLine("My move:");
+            Console.WriteLine(searchResult);
+        }
+
         static void Test()
         {
             var board = new Board("**---*******-****-**-****--*********-*x**---***-****o**-*****-**", Player.O);
-            var move = new AlphaBetaWithStats().BestMove(board, new SearchConfig(""), MoveTimer.I, new CancellationToken());
+            var move = new AlphaBetaWithStats().BestMove(board, new SearchConfig("60"), MoveTimer.I, new CancellationToken());
 
             Console.WriteLine(board.ToString());
             Console.WriteLine("");
@@ -121,6 +141,10 @@ namespace Isolation
 
         public static void Main(string[] args)
         {
+            TestEndGameTransition();
+            Console.ReadKey();
+            return;
+
             try
             {
                 // jack up CPU

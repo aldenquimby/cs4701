@@ -38,7 +38,6 @@ namespace Isolation
             Move = bestMove;
             Score = score;
             NodesGeneratedByDepth = new Dictionary<int, int>();
-            NodesTimedOutByDepth = new Dictionary<int, int>();
         }
 
         public BoardSpace Move { get; set; }
@@ -46,9 +45,9 @@ namespace Isolation
 
         public SearchConfig Config { get; set; }
         public IDictionary<int, int> NodesGeneratedByDepth { get; set; }
-        public IDictionary<int, int> NodesTimedOutByDepth { get; set; }
         public int NumNodesAtDepthLimit { get; set; }
         public int NumNodesQuiessenceSearched { get; set; }
+        public bool TimedOut { get; set; }
 
         public override string ToString()
         {
@@ -70,9 +69,9 @@ namespace Isolation
             builder.AppendLine("Game Mode: " + Config.GameMode);
             builder.AppendLine("Depth Limit: " + Config.DepthLimit);
             builder.AppendLine("Node Generation: " + printByDepth(NodesGeneratedByDepth));
-            builder.AppendLine("Node Timeouts: " + printByDepth(NodesTimedOutByDepth));
             builder.AppendLine("Depth Limit Nodes: " + NumNodesAtDepthLimit);
             builder.AppendLine("Quiessence Nodes: " + NumNodesQuiessenceSearched);
+            builder.AppendLine("Timeout: " + TimedOut);
             return builder.ToString();
         }
     }

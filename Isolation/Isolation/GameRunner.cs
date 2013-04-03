@@ -85,7 +85,7 @@ namespace Isolation
         // get alpha-beta configuration
         private static SearchConfig GetConfig()
         {
-            Console.WriteLine("Enter configuration: ");
+            Console.WriteLine("Enter timeout in seconds: ");
             var input = Console.ReadLine();
 
             SearchConfig cfg = null;
@@ -98,7 +98,7 @@ namespace Isolation
                 }
                 catch
                 {
-                    Console.WriteLine("Please enter a valid configuration: ");
+                    Console.WriteLine("Please enter a valid timeout: ");
                     input = Console.ReadLine();
                 }
             }

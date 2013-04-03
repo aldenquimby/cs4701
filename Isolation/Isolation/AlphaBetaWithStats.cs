@@ -16,7 +16,7 @@ namespace Isolation
 
         private SearchConfig _config;
         private Dictionary<int, int> _nodesGeneratedByDepth;
-        private Dictionary<int, int> _nodesTimedOutByDepth;
+        private bool _timedOut;
         private int _numNodesAtDepthLimit;
         private int _numNodesQuiessenceSearched;
 
@@ -27,7 +27,6 @@ namespace Isolation
             _timer = timer;
             _evaluator = HeuristicCache.I;
             _nodesGeneratedByDepth = Enumerable.Range(1, _config.DepthLimit).ToDictionary(x => x, x => 0);
-            _nodesTimedOutByDepth = Enumerable.Range(1, _config.DepthLimit).ToDictionary(x => x, x => 0);
             _numNodesAtDepthLimit = 0;
             _numNodesQuiessenceSearched = 0;
 
@@ -38,7 +37,7 @@ namespace Isolation
             result.NumNodesAtDepthLimit = _numNodesAtDepthLimit;
             result.NodesGeneratedByDepth = _nodesGeneratedByDepth;
             result.NumNodesQuiessenceSearched = _numNodesQuiessenceSearched;
-            result.NodesTimedOutByDepth = _nodesTimedOutByDepth;
+            result.TimedOut = _timedOut;
 
             return result;
         }
@@ -104,7 +103,7 @@ namespace Isolation
                 // if we're near timeout or asked to cancel, just bail :(
                 if (_timer.Timeout() || cancelToken.IsCancellationRequested)
                 {
-                    _nodesTimedOutByDepth[depth]++;
+                    _timedOut = true;
                     break;
                 }
 
