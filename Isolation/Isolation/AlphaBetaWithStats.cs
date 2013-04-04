@@ -8,7 +8,6 @@ namespace Isolation
     // THIS CLASS IS NOT USED AND IS ONLY INCLUDED TO SHOW
     // HOW I EVALUATED HEURISTICS AND RECORDED STATISTICS
     // ***************************************************
-    //TODO swap out usages of this
     public class AlphaBetaWithStats : IBestMoveGetter
     {
         private MoveTimer _timer;

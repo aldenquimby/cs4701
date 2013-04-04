@@ -9,7 +9,6 @@ namespace Isolation
             DepthLimit = toCopy.DepthLimit;
             PercentTimeLeftToIncrementDepthLimit = toCopy.PercentTimeLeftToIncrementDepthLimit;
             ReportStatistics = toCopy.ReportStatistics;
-            QuiessenceSearch = toCopy.QuiessenceSearch;
             MoveTimeout = toCopy.MoveTimeout;
             GameMode = toCopy.GameMode;
             _beginningHeuristic = toCopy._beginningHeuristic;
@@ -23,8 +22,7 @@ namespace Isolation
             MoveTimeout = TimeSpan.FromSeconds(int.Parse(parts[0]));
 
             // defaults
-            ReportStatistics = true;
-            QuiessenceSearch = true;
+            ReportStatistics = false;
             GameMode = GameMode.Beginning;
             _beginningHeuristic = new NumberOfMovesHeuristic();
             _middleHeuristic = new OpenAreaHeuristic();
@@ -48,16 +46,6 @@ namespace Isolation
             {
                 DepthLimit = depthLimitFromInput;
             }
-
-            // TODO: remove this
-            if ("59".Equals(configInput))
-            {
-                DepthLimit = 7;
-                QuiessenceSearch = false;
-                _middleHeuristic = new NumberOfMovesHeuristic();
-                //PercentTimeLeftToIncrementDepthLimit = 1;
-                //SortMovesAsc = false;
-            }
         }
 
         // maximum allowed time per move
@@ -70,10 +58,7 @@ namespace Isolation
         public double PercentTimeLeftToIncrementDepthLimit { get; set; }
 
         // output search statistics
-        public bool ReportStatistics { get; set; } // TODO: remove this
-
-        // quiessence search: extend depth if nodes look interesting
-        public bool QuiessenceSearch { get; set; } // TODO: remove this
+        public bool ReportStatistics { get; set; }
 
         // beginning, middle, or end game
         public GameMode GameMode { get; set; }

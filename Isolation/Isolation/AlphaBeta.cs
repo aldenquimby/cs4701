@@ -170,7 +170,7 @@ namespace Isolation
             }
             else // otherwise fall back to alpha beta
             {
-                var ab = new AlphaBetaWithStats().BestMove(board, config, timer, cancelToken);
+                var ab = new AlphaBeta().BestMove(board, config, timer, cancelToken);
 
                 // but if alpha beta thinks we'll lose, do longest move
                 if (ab.Score == int.MinValue)

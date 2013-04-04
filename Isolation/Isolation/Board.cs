@@ -6,38 +6,6 @@ namespace Isolation
 {
     public class Board : IEquatable<Board>
     {
-        //TODO: delete this before handing in
-        public Board(string flatBoard, Player myPlayer) : this()
-        {
-            if (flatBoard.Length != 64)
-            {
-                throw new ArgumentException("Invalid board.");
-            }
-
-            Initialize(myPlayer);
-
-            for (byte i = 0; i < 8; i++)
-            {
-                _board[i] = new BoardSpaceValue[8];
-                for (byte j = 0; j < 8; j++)
-                {
-                    var space = GetSpaceFromChar(flatBoard[i * 8 + j]);
-                    _board[i][j] = space;
-
-                    if (space == BoardSpaceValue.PlayerX)
-                    {
-                        Xposition = new BoardSpace(i, j);
-                    }
-                    else if (space == BoardSpaceValue.PlayerO)
-                    {
-                        Oposition = new BoardSpace(i, j);
-                    }
-                }
-            }
-
-            PlayerToMove = GetEmptySpacesRemaining() % 2 == 0 ? Player.X : Player.O;
-        }
-
         private readonly BoardSpaceValue[][] _board;
 
         public BoardSpace LastMove { get; private set; }
@@ -367,22 +335,10 @@ namespace Isolation
             }
         }
 
-        public string ToFlatString()
-        {
-            var builder = new StringBuilder();
-            for (var i = 0; i < 8; i++)
-            {
-                for (var j = 0; j < 8; j++)
-                {
-                    builder.Append(GetCharFromSpace(_board[i][j]));
-                }
-            }
-            return builder.ToString();
-        }
-
         public override string ToString()
         {
             var builder = new StringBuilder();
+            builder.AppendLine("*****************");
             builder.AppendLine("  1 2 3 4 5 6 7 8");
             for (var i = 0; i < 8; i++)
             {
@@ -391,12 +347,9 @@ namespace Isolation
                 {
                     builder.Append(GetCharFromSpace(_board[i][j])).Append(" ");
                 }
-
-                if (i != 7)
-                {
-                    builder.AppendLine();
-                }
+                builder.AppendLine();
             }
+            builder.Append("*****************");
             return builder.ToString();
         }
 

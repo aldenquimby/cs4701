@@ -28,7 +28,7 @@ namespace Isolation
                     return () => new LongestPath(_isWalledOff);
                 }
 
-                return () => new AlphaBetaWithStats();
+                return () => new AlphaBeta();
             }
         }
 
@@ -75,7 +75,7 @@ namespace Isolation
             var timedOut = MoveTimer.I.Timeout();
             MoveTimer.I.ResetTimer();
 
-            // report stats
+            // report stats, for debugging only, will be off in production
             if (_config.ReportStatistics)
             {
                 Console.WriteLine("Time Taken (s): " + elapsed.TotalSeconds);

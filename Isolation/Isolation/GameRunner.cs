@@ -21,6 +21,7 @@ namespace Isolation
 
             // get the initial board
             var board = Board.ConstructInitialBoard(myPlayer);
+            Console.WriteLine(board.ToString());
 
             while (true)
             {
@@ -32,6 +33,9 @@ namespace Isolation
                         Console.WriteLine("I lose :).");
                         break;
                     }
+
+                    Console.WriteLine(board.ToString());
+
                     if (!OpponentMove(board))
                     {
                         Console.WriteLine("I win :).");
@@ -45,12 +49,17 @@ namespace Isolation
                         Console.WriteLine("I win :).");
                         break;
                     }
+
+                    Console.WriteLine(board.ToString());
+
                     if (!MyMove(board))
                     {
                         Console.WriteLine("I lose :).");
                         break;
                     }
                 }
+
+                Console.WriteLine(board.ToString());
             }
         }
 
@@ -97,8 +106,6 @@ namespace Isolation
         // perform my next move on the board
         private static bool MyMove(Board board)
         {
-            Console.WriteLine(board.ToString());
-
             var myMove = Searcher.I.GetMyNextMove(board);
 
             Console.WriteLine("My move:");
@@ -117,30 +124,21 @@ namespace Isolation
         // perform opponents next move on the board
         private static bool OpponentMove(Board board, bool preComputeMyMove = true)
         {
-            Console.WriteLine(board.ToString());
-
-            if (preComputeMyMove)
-            {
-                // start evaluation for my next move on a bunch of new threads
-                Searcher.I.PreComputeNextMove(board);
-            }
-
             // if opponent can't move, i win!
             if (!board.GetOpponentValidMoves().Any())
             {
-                Console.WriteLine("Opponent cannot move!");
                 return false;
+            }
+
+            // start evaluation for my next move on a bunch of new threads
+
+            if (preComputeMyMove)
+            {
+                Searcher.I.PreComputeNextMove(board);
             }
 
             // ask for move
             var move = GetOpponentMove();
-
-            if (move == null) //TODO: remove this hack for the server
-            {
-                Console.ReadLine(); // getting past the stupid 'undo' question
-                Console.WriteLine("Opponenet quit.");
-                return false;
-            }
 
             // ensure it is valid
             if (!board.GetValidMoves().Any(x => x.Equals(move)))
@@ -150,7 +148,6 @@ namespace Isolation
                 // if opponent enters invalid move, they forfeit
                 if ("y".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine("Opponent forfeits from invalid move.");
                     return false;
                 }
 
@@ -160,7 +157,7 @@ namespace Isolation
 
             // confirm move is correct, which is equivalent to rollback functionality
             // a rollback would simply mean asking this question after performing the move instead of before
-            Console.WriteLine("Should I continue? 'undo' to rollback the last move, anything else to continue.");
+            Console.WriteLine("Are you sure? 'undo' to rollback, anything else to continue.");
             if ("undo".Equals(Console.ReadLine(), StringComparison.OrdinalIgnoreCase))
             {
                 return OpponentMove(board, false);
@@ -182,14 +179,7 @@ namespace Isolation
             {
                 try
                 {
-                    var input = Console.ReadLine();
-
-                    if ("kill client".Equals(input)) //TODO: remove this server hack
-                    {
-                        return null;
-                    }
-
-                    move = new BoardSpace(input);
+                    move = new BoardSpace(Console.ReadLine());
                 }
                 catch
                 {
