@@ -7,6 +7,7 @@ namespace Isolation
 {
     public class Program
     {
+        //TODO: clear out all these methods
         static void TestEndGameTransition()
         {
             const string boardString = "* * - * - * - -" +

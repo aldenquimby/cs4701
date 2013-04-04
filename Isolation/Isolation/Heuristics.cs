@@ -227,21 +227,4 @@ namespace Isolation
 
         public override string Name { get { return "LongestPath"; } }
     }
-
-    // TODO: just delete this bad boy
-    // global static heuristic evaluator
-    public class HeuristicCache
-    {
-        #region singleton
-
-        private static readonly Lazy<HeuristicCache> Singleton = new Lazy<HeuristicCache>(() => new HeuristicCache());
-        public static HeuristicCache I { get { return Singleton.Value; } }
-
-        #endregion
-
-        public int Evaluate(Board board, HeuristicBase heuristic)
-        {
-            return heuristic.Evaluate(board);
-        }
-    }
 }

@@ -3,6 +3,8 @@ using System.Linq;
 
 namespace Isolation
 {
+    // handles starting up, outputting my move, reading their move, etc.
+    // basically, runs the game until it's over
     public class GameRunner
     {
         // play a new game
@@ -99,13 +101,14 @@ namespace Isolation
 
             var myMove = Searcher.I.GetMyNextMove(board);
 
+            Console.WriteLine("My move:");
+            
             if (myMove == null)
             {
-                Console.WriteLine("I cannot move!");
+                Console.WriteLine("(nil nil)");
                 return false;
             }
 
-            Console.WriteLine("My move:");
             Console.WriteLine(myMove.ToString());
             board.Move(myMove);
             return true;

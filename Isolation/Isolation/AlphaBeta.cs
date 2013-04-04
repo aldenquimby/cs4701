@@ -1,4 +1,6 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace Isolation
@@ -8,19 +10,17 @@ namespace Isolation
         IBestMoveResult BestMove(Board board, SearchConfig config, MoveTimer timer, CancellationToken cancelToken);
     }
 
+    // alpha beta implementation with quiessence search
     public class AlphaBeta : IBestMoveGetter
     {
-        private HeuristicCache _evaluator;
         private MoveTimer _timer;
-
-        private int _numNodesQuiessenceSearched;
         private SearchConfig _config;
-
+        private int _numNodesQuiessenceSearched;
+        
         public IBestMoveResult BestMove(Board board, SearchConfig config, MoveTimer timer, CancellationToken cancelToken)
         {
             _config = config;
             _timer = timer;
-            _evaluator = HeuristicCache.I;
             _numNodesQuiessenceSearched = 0;
 
             return BestMoveInternal(board, _config.DepthLimit, int.MinValue, int.MaxValue, cancelToken);
@@ -32,7 +32,7 @@ namespace Isolation
             // if we reached the bottom, return
             if (depth == 0)
             {
-                return new BestMoveResult(_evaluator.Evaluate(board, _config.Heuristic), null);
+                return new BestMoveResult(_config.Heuristic.Evaluate(board), null);
             }
 
             var isMaxTurn = board.MyPlayer == board.PlayerToMove;
@@ -51,7 +51,7 @@ namespace Isolation
             var validMovesWithBoard = validMoves.Select(x =>
             {
                 var newBoard = board.Copy().Move(x);
-                var score = _evaluator.Evaluate(newBoard, _config.Heuristic);
+                var score = _config.Heuristic.Evaluate(newBoard);
                 return new { move = x, newBoard, score };
             });
 
@@ -60,15 +60,15 @@ namespace Isolation
                                       ? validMovesWithBoard.OrderByDescending(x => x.score)
                                       : validMovesWithBoard.OrderBy(x => x.score);
 
-            // if we're doing a quiessence search, evaluate this board because we'll need to for all children
-            var boardScore = _config.QuiessenceSearch ? _evaluator.Evaluate(board, _config.Heuristic) : new int?();
+            // evaluate this board because we'll need to for quiessence search
+            var boardScore = _config.Heuristic.Evaluate(board);
 
             foreach (var move in validMovesWithBoard)
             {
                 IBestMoveResult childResult;
 
                 // if we're doing a quiessence search, check to see if heuristic score change is interesting
-                if (boardScore != null && IsInterestingMove(boardScore.Value, move.score))
+                if (IsInterestingMove(boardScore, move.score))
                 {
                     // extend search depth because this move looks interesting
                     _numNodesQuiessenceSearched++;
@@ -121,14 +121,8 @@ namespace Isolation
 
         private bool IsInterestingMove(int originalScore, int newScore)
         {
-            // if no quiessence search configured, nothing is interesting
-            if (!_config.QuiessenceSearch)
-            {
-                return false;
-            }
-
             // prevent infinite quiessence search with hard coded max generation (should never reach this though)
-            if (_numNodesQuiessenceSearched > 2000 * _config.DepthLimit)
+            if (_numNodesQuiessenceSearched > 1000 * _config.DepthLimit)
             {
                 return false;
             }
@@ -142,11 +136,102 @@ namespace Isolation
             var percent1 = ((double)(newScore - originalScore) / newScore);
             var percent2 = ((double)(originalScore - newScore) / originalScore);
 
-            var interestingScoreChange = _config.DepthLimit + 1.4;
+            var interestingScoreChange = _config.DepthLimit + 1.25;
 
             // must have large enough percent change
             return percent1 > interestingScoreChange || percent1 < -interestingScoreChange ||
                    percent2 > interestingScoreChange || percent2 < -interestingScoreChange;
+        }
+    }
+
+    // should ONLY be used in end game mode
+    // if we are walled off from the opponent, walk the longest possible path
+    // otherwise do alpha/beta
+    public class LongestPath : IBestMoveGetter
+    {
+        private readonly bool _isWalledOff;
+        private MoveTimer _timer;
+        private CancellationToken _cancelToken;
+
+        public LongestPath(bool isWalledOff)
+        {
+            _isWalledOff = isWalledOff;
+        }
+
+        public IBestMoveResult BestMove(Board board, SearchConfig config, MoveTimer timer, CancellationToken cancelToken)
+        {
+            _timer = timer;
+            _cancelToken = cancelToken;
+
+            if (_isWalledOff)
+            {
+                var longestPath = NextMoveOnLongestPath(board, board.PlayerToMove);
+                return new BestMoveResult(longestPath.Item1, longestPath.Item2);
+            }
+            else // otherwise fall back to alpha beta
+            {
+                var ab = new AlphaBetaWithStats().BestMove(board, config, timer, cancelToken);
+
+                // but if alpha beta thinks we'll lose, do longest move
+                if (ab.Score == int.MinValue)
+                {
+                    var longestPath = NextMoveOnLongestPath(board, board.PlayerToMove);
+                    return new BestMoveResult(longestPath.Item1, longestPath.Item2);
+                }
+                
+                return ab;
+            }
+        }
+
+        // gets the next move and the path length on your longest possible path
+        // assumes that other player does NOT move while you walk the path (which is sub-optimal)
+        private Tuple<int, BoardSpace> NextMoveOnLongestPath(Board board, Player player)
+        {
+            Tuple<int, List<Tuple<Board, BoardSpace>>> result;
+
+            if (player == Player.X)
+            {
+                result = LongestPathInReverseOrder(board, x => x.GetMoves(x.Xposition), (x, y) => x.MoveX(y));
+            }
+            else
+            {
+                result = LongestPathInReverseOrder(board, x => x.GetMoves(x.Oposition), (x, y) => x.MoveO(y));
+            }
+
+            var pathLength = result.Item1;
+            var backwardsPath = result.Item2;
+
+            return Tuple.Create(pathLength, backwardsPath.Count > 0 ? backwardsPath.Last().Item2 : null);
+        }
+
+        // depth first search of longest walkable path, returns path length and the sequence of moves and boards in reverse order
+        private Tuple<int, List<Tuple<Board, BoardSpace>>> LongestPathInReverseOrder(Board board, Func<Board, IEnumerable<BoardSpace>> moveGetter, Action<Board, BoardSpace> makeMove)
+        {
+            var longestPathLength = 0;
+            var path = new List<Tuple<Board, BoardSpace>>();
+
+            foreach (var move in moveGetter(board))
+            {
+                // bail if we're timing out
+                if (_timer.Timeout() || _cancelToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                var newBoard = board.Copy();
+                makeMove(newBoard, move);
+
+                var child = LongestPathInReverseOrder(newBoard, moveGetter, makeMove);
+                var pathLength = child.Item1 + 1;
+
+                if (pathLength > longestPathLength)
+                {
+                    longestPathLength = pathLength;
+                    path = new List<Tuple<Board, BoardSpace>>(child.Item2) { Tuple.Create(newBoard, move) };
+                }
+            }
+
+            return Tuple.Create(longestPathLength, path);
         }
     }
 }

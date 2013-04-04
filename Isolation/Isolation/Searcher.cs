@@ -16,17 +16,18 @@ namespace Isolation
         #endregion
 
         private SearchConfig _config;
+        private bool _isWalledOff;
 
-        // if end game, DONT ALWAYS DO ALPHA BETA, try to just walk our longest possible path
+        // do alpha-beta until the end game, then just walk longest path
         private Func<IBestMoveGetter> MoveGetter
         {
             get
             {
                 if (_config.GameMode == GameMode.End)
                 {
-                    return () => new LongestPath();
+                    return () => new LongestPath(_isWalledOff);
                 }
-                
+
                 return () => new AlphaBetaWithStats();
             }
         }
@@ -34,7 +35,7 @@ namespace Isolation
         public void Initialize(SearchConfig config)
         {
             _config = config;
-
+            
             // tell move timer about timeout
             MoveTimer.I.SetTimeout(config.MoveTimeout);
         }
@@ -122,34 +123,34 @@ namespace Isolation
                     _config.GameMode = GameMode.Middle;
                 }
             }
-            else if (_config.GameMode == GameMode.Middle)
+            else if (_config.GameMode == GameMode.Middle && !timedOut)
             {
-                // if we think we're going to win, maybe switch to end game
-                if (bestMoveResult.Score == int.MaxValue && bestMoveResult.Move != null)
+                // find out what our areas look like
+                var boardPostMove = board.Copy().Move(bestMoveResult.Move);
+                var myArea = OpenAreaHeuristic.GetOpenArea(boardPostMove, boardPostMove.MyPlayer);
+                var oppArea = OpenAreaHeuristic.GetOpenArea(boardPostMove, boardPostMove.OpponentPlayer);
+
+                // if we are walled off, switch to end game
+                if (myArea.All(x => !oppArea.Contains(x)))
                 {
-                    // if this move guarentees a win, switch to end game
-                    var scoreAfterThisMove = HeuristicCache.I.Evaluate(board.Copy().Move(bestMoveResult.Move), _config.Heuristic);
-                    if (scoreAfterThisMove == int.MaxValue)
-                    {
-                        _config.DepthLimit = 30;
-                        _config.GameMode = GameMode.End;
-                    }
+                    _isWalledOff = true;
+                    _config.GameMode = GameMode.End;
                 }
-                else // we don't think we're going to win yet
+                else // we aren't walled off
                 {
-                    // if it's time for end game, switch
+                    // if it's time for end game, switch and max out depth
                     if (emptySpaces <= 28)
                     {
                         _config.DepthLimit = 30;
                         _config.GameMode = GameMode.End;
                     }
-                    // if we think we're going to lose and have some time left, try to find our best move b/c alpha-beta will pick a random one
-                    else if (bestMoveResult.Score == int.MinValue && !timedOut)
+                    // if we think we're going to lose, try to find our best move b/c alpha-beta will pick a random one
+                    else if (bestMoveResult.Score == int.MinValue)
                     {
                         var tasksByDepthLimit = new Dictionary<int, AsyncSearchTask>();
 
                         // simultaneously search at smaller depths to get our best move that isn't -infinity
-                        for (var newDepthLimit = _config.DepthLimit - 1; newDepthLimit > 0; newDepthLimit--)
+                        for (var newDepthLimit = _config.DepthLimit - 1; newDepthLimit > _config.DepthLimit/2; newDepthLimit--)
                         {
                             var newConfig = new SearchConfig(_config) { DepthLimit = newDepthLimit };
 
@@ -187,13 +188,6 @@ namespace Isolation
                             {
                                 bestMoveResult = newBestMove;
                             }
-                        }
-
-                        // if we still think we're gauarenteed to lose, switch to end game to maximize moves left
-                        if (bestMoveResult.Score == int.MinValue && emptySpaces <= 30) 
-                        {
-                            _config.DepthLimit = 30;
-                            _config.GameMode = GameMode.End;
                         }
                     }
                 }

@@ -8,11 +8,10 @@ namespace Isolation
     // THIS CLASS IS NOT USED AND IS ONLY INCLUDED TO SHOW
     // HOW I EVALUATED HEURISTICS AND RECORDED STATISTICS
     // ***************************************************
+    //TODO swap out usages of this
     public class AlphaBetaWithStats : IBestMoveGetter
     {
-        private HeuristicCache _evaluator;
         private MoveTimer _timer;
-
         private SearchConfig _config;
         private Dictionary<int, int> _nodesGeneratedByDepth;
         private bool _timedOut;
@@ -24,7 +23,6 @@ namespace Isolation
             // initialize stats
             _config = config;
             _timer = timer;
-            _evaluator = HeuristicCache.I;
             _nodesGeneratedByDepth = Enumerable.Range(1, _config.DepthLimit).ToDictionary(x => x, x => 0);
             _numNodesAtDepthLimit = 0;
             _numNodesQuiessenceSearched = 0;
@@ -48,7 +46,7 @@ namespace Isolation
             if (depth == 0)
             {
                 _numNodesAtDepthLimit++;
-                return new BestMoveResultWithStats(_evaluator.Evaluate(board, _config.Heuristic), null);
+                return new BestMoveResultWithStats(_config.Heuristic.Evaluate(board), null);
             }
 
             var isMaxTurn = board.MyPlayer == board.PlayerToMove;
@@ -68,7 +66,7 @@ namespace Isolation
                 {
                     var newBoard = board.Copy().Move(x);
                     _nodesGeneratedByDepth[depth]++;
-                    var score = _evaluator.Evaluate(newBoard, _config.Heuristic);
+                    var score = _config.Heuristic.Evaluate(newBoard);
                     return new {move = x, newBoard, score};
                 });
 
@@ -82,15 +80,15 @@ namespace Isolation
                 validMovesWithBoard = validMovesWithBoard.OrderBy(x => x.score);
             }
 
-            // if we're doing a quiessence search, evaluate this board because we'll need to for all children
-            var boardScore = _config.QuiessenceSearch ? _evaluator.Evaluate(board, _config.Heuristic) : new int?();
+            // evaluate this board because we'll need to for quiessence search
+            var boardScore = _config.Heuristic.Evaluate(board);
 
             foreach (var move in validMovesWithBoard)
             {
                 BestMoveResultWithStats childResult;
 
                 // if we're doing a quiessence search, check to see if heuristic score change is interesting
-                if (boardScore != null && IsInterestingMove(boardScore.Value, move.score))
+                if (IsInterestingMove(boardScore, move.score))
                 {
                     // extend search depth because this move looks interesting
                     _numNodesQuiessenceSearched++;
@@ -144,12 +142,6 @@ namespace Isolation
 
         private bool IsInterestingMove(int originalScore, int newScore)
         {
-            // if no quiessence search configured, nothing is interesting
-            if (!_config.QuiessenceSearch)
-            {
-                return false;
-            }
-
             // prevent infinite quiessence search with hard coded max generation (should never reach this though)
             if (_numNodesQuiessenceSearched > 2000 * _config.DepthLimit)
             {

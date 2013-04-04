@@ -33,13 +33,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="MySql.Data, Version=6.6.4.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\MySql.Data.6.6.4\lib\net40\MySql.Data.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Runtime.Caching" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AlphaBeta.cs" />
@@ -47,9 +41,8 @@
     <Compile Include="BoardSpace.cs" />
     <Compile Include="AlphaBetaWithStats.cs" />
     <Compile Include="BestMoveResult.cs" />
-    <Compile Include="LongestPath.cs" />
     <Compile Include="SearchConfig.cs" />
-    <Compile Include="Constants.cs" />
+    <Compile Include="Enums.cs" />
     <Compile Include="GameRunner.cs" />
     <Compile Include="Heuristics.cs" />
     <Compile Include="MoveTimer.cs" />

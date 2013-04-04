@@ -2,6 +2,7 @@
 
 namespace Isolation
 {
+    // simple wrapper for row and column on a board
     public class BoardSpace : IEquatable<BoardSpace>
     {
         public byte Row { get; private set; }

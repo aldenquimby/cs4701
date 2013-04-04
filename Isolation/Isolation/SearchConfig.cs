@@ -17,12 +17,12 @@ namespace Isolation
             _endHeuristic = toCopy._endHeuristic;
         }
 
-        public SearchConfig(string timeoutInSeconds)
+        public SearchConfig(string configInput)
         {
-            MoveTimeout = TimeSpan.FromSeconds(int.Parse(timeoutInSeconds));
+            var parts = configInput.Split(',');
+            MoveTimeout = TimeSpan.FromSeconds(int.Parse(parts[0]));
 
             // defaults
-            PercentTimeLeftToIncrementDepthLimit = 0.90;
             ReportStatistics = true;
             QuiessenceSearch = true;
             GameMode = GameMode.Beginning;
@@ -30,11 +30,27 @@ namespace Isolation
             _middleHeuristic = new OpenAreaHeuristic();
             _endHeuristic = new LongestPathHeuristic();
 
-            // depth limit is based on timeout
-            DepthLimit = MoveTimeout.TotalSeconds > 45 ? 8 : 7;
+            // timeout dependent config
+            if (MoveTimeout.TotalSeconds > 45)
+            {
+                DepthLimit = 8;
+                PercentTimeLeftToIncrementDepthLimit = 0.85;
+            }
+            else
+            {
+                DepthLimit = 7;
+                PercentTimeLeftToIncrementDepthLimit = 0.92;
+            }
 
-            // from timeoutInSeconds
-            if ("59".Equals(timeoutInSeconds))
+            // allow depth limit to be entered manually
+            int depthLimitFromInput;
+            if (parts.Length > 1 && int.TryParse(parts[1], out depthLimitFromInput))
+            {
+                DepthLimit = depthLimitFromInput;
+            }
+
+            // TODO: remove this
+            if ("59".Equals(configInput))
             {
                 DepthLimit = 7;
                 QuiessenceSearch = false;
@@ -54,10 +70,10 @@ namespace Isolation
         public double PercentTimeLeftToIncrementDepthLimit { get; set; }
 
         // output search statistics
-        public bool ReportStatistics { get; set; }
+        public bool ReportStatistics { get; set; } // TODO: remove this
 
         // quiessence search: extend depth if nodes look interesting
-        public bool QuiessenceSearch { get; set; }
+        public bool QuiessenceSearch { get; set; } // TODO: remove this
 
         // beginning, middle, or end game
         public GameMode GameMode { get; set; }
