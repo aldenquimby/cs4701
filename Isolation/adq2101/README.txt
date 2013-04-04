@@ -107,7 +107,7 @@ ADDITIONS TO ALPHA BETA
 		Game. Additionally, if we detect that we are gaurenteed to lose (alpha is
 		negative infinity), Searcher tries to find an optimal move instead of using
 		the result of alpha-beta, which will basically be a random move.
-	4. End Game
+	3.1 End Game
 		When Searcher.cs decides we are in End Game, we do NOT necessarily do an 
 		alpha-beta search. Specifically, if my player is walled off from my opponent,
 		I simply calculate the longest possible path I can take before dying and begin
@@ -125,5 +125,9 @@ ADDITIONS TO ALPHA BETA
 		his/her move, I begin thinking about how I will respond. It would probably
 		be more optimal to "guess" where my opponent would move instead of starting
 		a thread for every possible move they could make, but I did not implement this.
-
-
+	5. Move Order
+		To improve alpha-beta pruning, I evaluate all child states and order them before
+		expanding. Specifically, order descending during the "max turn" stages and
+		order ascending during the "min turn" stages. This should theoretically increase
+		pruning, and in my testing it drastically reduced the amount of nodes my
+		alpha-beta generates.
