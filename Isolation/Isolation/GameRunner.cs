@@ -106,6 +106,8 @@ namespace Isolation
         // perform my next move on the board
         private static bool MyMove(Board board)
         {
+            Console.WriteLine("Calculating my move...");
+
             var myMove = Searcher.I.GetMyNextMove(board);
 
             Console.WriteLine("My move:");

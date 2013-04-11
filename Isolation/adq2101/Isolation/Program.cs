@@ -9,9 +9,9 @@ namespace Isolation
         {
             try
             {
-                // jack up CPU
+                // jack up CPU - will slow down all other apps on the machine
                 Process.GetCurrentProcess().PriorityBoostEnabled = true;
-                Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.High;
+                Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.RealTime;
 
                 GameRunner.KickoffNewGame();
             }

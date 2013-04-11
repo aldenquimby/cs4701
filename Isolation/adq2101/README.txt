@@ -12,16 +12,17 @@ TO RUN MY CODE
 ---------------------
 QUICK NOTE ON RUNNING MY CODE
 ---------------------
-	I set the initial depth limit for my alpha-beta searched based on 
-	practicing with my laptop, to optimize for the tournament. If the 
-	client appears to be running out of time and making suboptimal moves to 
-	start when you test this on your laptop, you can change the starting depth 
-	limit when asked for a timeout on startup. Specifically if you enter:
+	I set the initial depth limit for my alpha-beta search based on practicing
+	with my laptop, to optimize for the tournament. If the client appears to be
+	running out of time and making suboptimal moves to start when you test this 
+	on your laptop, you can change the starting depth limit when asked for a 
+	timeout on startup. Specifically if you enter:
 	   		
 	   		"Enter timeout in seconds: 45,4"
    	
    	this will set a move timeout of 45 seconds and an initial search depth
-   	of 4 plys.
+   	of 4 plys. That said, my program will recognize a timeout and decrease the 
+   	search depth appropriately so that it doesn't time out on the next move.
 
 ---------------------
 TO READ MY CODE (brief description of important files)
@@ -35,7 +36,7 @@ TO READ MY CODE (brief description of important files)
 	Searcher.cs     --> manages searching for my move and game state
 
 ---------------------
-EVALUATION FUNCTION
+EVALUATION FUNCTIONS
 ---------------------
 	- I implemented multiple heuristics, one for the beginning of the game,
 	  one for the middle, and one for the end

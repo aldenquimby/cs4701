@@ -4,50 +4,6 @@ namespace Isolation
 {
     public class SearchConfig
     {
-        public SearchConfig(SearchConfig toCopy)
-        {
-            DepthLimit = toCopy.DepthLimit;
-            PercentTimeLeftToIncrementDepthLimit = toCopy.PercentTimeLeftToIncrementDepthLimit;
-            ReportStatistics = toCopy.ReportStatistics;
-            MoveTimeout = toCopy.MoveTimeout;
-            GameMode = toCopy.GameMode;
-            _beginningHeuristic = toCopy._beginningHeuristic;
-            _middleHeuristic = toCopy._middleHeuristic;
-            _endHeuristic = toCopy._endHeuristic;
-        }
-
-        public SearchConfig(string configInput)
-        {
-            var parts = configInput.Split(',');
-            MoveTimeout = TimeSpan.FromSeconds(int.Parse(parts[0]));
-
-            // defaults
-            ReportStatistics = false;
-            GameMode = GameMode.Beginning;
-            _beginningHeuristic = new NumberOfMovesHeuristic();
-            _middleHeuristic = new OpenAreaHeuristic();
-            _endHeuristic = new LongestPathHeuristic();
-
-            // timeout dependent config
-            if (MoveTimeout.TotalSeconds > 45)
-            {
-                DepthLimit = 8;
-                PercentTimeLeftToIncrementDepthLimit = 0.85;
-            }
-            else
-            {
-                DepthLimit = 7;
-                PercentTimeLeftToIncrementDepthLimit = 0.92;
-            }
-
-            // allow depth limit to be entered manually
-            int depthLimitFromInput;
-            if (parts.Length > 1 && int.TryParse(parts[1], out depthLimitFromInput))
-            {
-                DepthLimit = depthLimitFromInput;
-            }
-        }
-
         // maximum allowed time per move
         public TimeSpan MoveTimeout { get; set; }
 
@@ -82,6 +38,51 @@ namespace Isolation
                     default:
                         return _beginningHeuristic;
                 }
+            }
+        }
+
+        // constructors
+        public SearchConfig(SearchConfig toCopy)
+        {
+            DepthLimit = toCopy.DepthLimit;
+            PercentTimeLeftToIncrementDepthLimit = toCopy.PercentTimeLeftToIncrementDepthLimit;
+            ReportStatistics = toCopy.ReportStatistics;
+            MoveTimeout = toCopy.MoveTimeout;
+            GameMode = toCopy.GameMode;
+            _beginningHeuristic = toCopy._beginningHeuristic;
+            _middleHeuristic = toCopy._middleHeuristic;
+            _endHeuristic = toCopy._endHeuristic;
+        }
+
+        public SearchConfig(string configInput)
+        {
+            var parts = configInput.Split(',');
+            MoveTimeout = TimeSpan.FromSeconds(int.Parse(parts[0]));
+
+            // defaults
+            ReportStatistics = false;
+            GameMode = GameMode.Beginning;
+            _beginningHeuristic = new NumberOfMovesHeuristic();
+            _middleHeuristic = new OpenAreaHeuristic();
+            _endHeuristic = new LongestPathHeuristic();
+
+            // timeout dependent config
+            if (MoveTimeout.TotalSeconds > 45)
+            {
+                DepthLimit = 8;
+                PercentTimeLeftToIncrementDepthLimit = 0.85;
+            }
+            else
+            {
+                DepthLimit = 7;
+                PercentTimeLeftToIncrementDepthLimit = 0.90;
+            }
+
+            // allow depth limit to be entered manually in case 7 or 8 too deep for TA
+            int depthLimitFromInput;
+            if (parts.Length > 1 && int.TryParse(parts[1], out depthLimitFromInput))
+            {
+                DepthLimit = depthLimitFromInput;
             }
         }
     }

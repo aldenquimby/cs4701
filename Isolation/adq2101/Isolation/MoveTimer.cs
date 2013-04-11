@@ -54,7 +54,8 @@ namespace Isolation
 
         public bool Timeout()
         {
-            return GetPercentOfTimeRemaining() < 0.01;
+            // slight cushion to ensure we don't go over time
+            return GetPercentOfTimeRemaining() < 0.02; 
         }
     }
 }
