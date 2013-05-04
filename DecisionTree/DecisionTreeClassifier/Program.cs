@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Reflection;
 using Newtonsoft.Json;
 using DecisionTree;
 
@@ -8,19 +10,47 @@ namespace DecisionTreeClassifier
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine("Cool this works!");
+            try
+            {
+                // construct test data
+                var fileName = GetTestDataFilePath(args);
+                var testData = DataSet.ConstructFromCsv(fileName);
 
-            var tree = JsonConvert.DeserializeObject<Tree>(SerializedDecisionTree);
+                // construct decision tree
+                var decisionTree = GetDecisionTree();
 
-            var reSerialized = JsonConvert.SerializeObject(tree, Formatting.Indented);
+                // run the classifier
+                new Classifier().Run(decisionTree, testData);
 
-            Console.WriteLine(reSerialized);
+                // output the result
+                Console.WriteLine("Result goes here");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("OH NO, SOMETHING FAILED!");
+                Console.WriteLine(e.Message);
+            }
 
-            Console.ReadKey();
+            Console.WriteLine("Done! Press any key to terminate.");
+            Console.ReadKey(); 
         }
 
-        // the DecisionTreeLearner will modify this program
-        // and put a JSON serialized version of the tree here
-        public static string SerializedDecisionTree = "{\"Name\":\"Parent\",\"Children\":[{\"Name\":\"Child1\",\"Children\":[]},{\"Name\":\"Child2\",\"Children\":[]}]}";
+        private static string GetTestDataFilePath(string[] args)
+        {
+            var fileName = args.Length == 1 ? args[0] : "test_data.csv";
+
+            var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+            var assemblyDirectory = new FileInfo(assemblyLocation).DirectoryName ?? "";
+
+            return Path.Combine(assemblyDirectory, fileName);
+        }
+
+        private static Tree GetDecisionTree()
+        {
+            // the DecisionTreeLearner will modify this line to be a JSON serialized tree
+            const string serializedDecisionTree = "{\"Name\":\"Parent\",\"Children\":[{\"Name\":\"Child1\",\"Children\":[]},{\"Name\":\"Child2\",\"Children\":[]}]}";
+
+            return JsonConvert.DeserializeObject<Tree>(serializedDecisionTree);
+        }
     }
 }
