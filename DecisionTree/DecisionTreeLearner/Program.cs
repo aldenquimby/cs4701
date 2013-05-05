@@ -13,7 +13,7 @@ namespace DecisionTreeLearner
             {
                 // construct training data
                 var fileName = GetTrainingDataFilePath(args);
-                var trainingData = DataSet.ConstructFromCsv(fileName);
+                var trainingData = DataSet.ConstructFromCsv(fileName, hasClassLabel:true);
 
                 // run the learner
                 var decisionTree = Learner.ConstructDecisionTree(trainingData);
@@ -22,7 +22,8 @@ namespace DecisionTreeLearner
                 var classifierExe = Compiler.CompileClassifier(decisionTree);
                 
                 // ouput result
-                Console.WriteLine("Classify new data using this program: " + classifierExe);
+                Console.WriteLine("Classify new data using this program:");
+                Console.WriteLine(classifierExe);
             }
             catch (Exception e)
             {

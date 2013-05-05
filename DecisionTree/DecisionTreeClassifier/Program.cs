@@ -14,16 +14,13 @@ namespace DecisionTreeClassifier
             {
                 // construct test data
                 var fileName = GetTestDataFilePath(args);
-                var testData = DataSet.ConstructFromCsv(fileName);
+                var testData = DataSet.ConstructFromCsv(fileName, hasClassLabel:false);
 
                 // construct decision tree
                 var decisionTree = GetDecisionTree();
 
                 // run the classifier
                 Classifier.Run(decisionTree, testData);
-
-                // output the result
-                Console.WriteLine("Result goes here");
             }
             catch (Exception e)
             {
@@ -48,7 +45,7 @@ namespace DecisionTreeClassifier
         private static TreeNode GetDecisionTree()
         {
             // the DecisionTreeLearner will modify this line to be a JSON serialized tree
-            const string serializedDecisionTree = "{\"Name\":\"Parent\",\"Children\":[{\"Name\":\"Child1\",\"Children\":[]},{\"Name\":\"Child2\",\"Children\":[]}]}";
+            const string serializedDecisionTree = "{\"ColNum\":4,\"ClassLabel\":null,\"Children\":{\"Some\":{\"ColNum\":0,\"ClassLabel\":\"Yes\",\"Children\":{}},\"Full\":{\"ColNum\":3,\"ClassLabel\":null,\"Children\":{\"Yes\":{\"ColNum\":8,\"ClassLabel\":null,\"Children\":{\"French\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}},\"Thai\":{\"ColNum\":2,\"ClassLabel\":null,\"Children\":{\"No\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}},\"Yes\":{\"ColNum\":0,\"ClassLabel\":\"Yes\",\"Children\":{}}}},\"Burger\":{\"ColNum\":0,\"ClassLabel\":\"Yes\",\"Children\":{}},\"Italian\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}}}},\"No\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}}}},\"None\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}}}}";
 
             return JsonConvert.DeserializeObject<TreeNode>(serializedDecisionTree);
         }

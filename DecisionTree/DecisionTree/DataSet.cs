@@ -18,14 +18,14 @@ namespace DecisionTree
         public IList<Example> Examples { get; set; }
         public IList<DataAttribute> Attributes { get; set; } 
 
-        public static DataSet ConstructFromCsv(string filePath)
+        public static DataSet ConstructFromCsv(string filePath, bool hasClassLabel)
         {
             var set = new DataSet();
 
             var contents = File.ReadAllText(filePath);
             var entries = contents.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
 
-            var attrCount = 0;
+            var correctAttrCount = 0;
 
             foreach (var entry in entries)
             {
@@ -33,18 +33,21 @@ namespace DecisionTree
 
                 var fields = entry.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
+                // if we have a class label, the last field is not an attribute
+                var attrCount = hasClassLabel ? fields.Length - 1 : fields.Length;
+
                 // make sure that all entries have the same number of attributes
-                if (attrCount == 0)
+                if (correctAttrCount == 0)
                 {
-                    attrCount = fields.Length;
+                    correctAttrCount = attrCount;
                 }
-                else if (attrCount != fields.Length)
+                else if (correctAttrCount != attrCount)
                 {
-                    throw new Exception("Invalid CSV entry, wrong number of fields.");    
+                    throw new Exception("Invalid CSV entry, wrong number of attributes.");    
                 }
 
                 // add all attributes to example
-                for (var i = 0; i < fields.Length - 1; i++)
+                for (var i = 0; i < attrCount; i++)
                 {
                     var value = fields[i].Trim();
                     
@@ -52,13 +55,16 @@ namespace DecisionTree
 
                     if (set.Attributes.Count == i)
                     {
-                        set.Attributes[i] = new DataAttribute(i);
+                        set.Attributes.Add(new DataAttribute(i));
                     }
                     set.Attributes[i].Values.Add(value);
                 }
 
-                // class label is always the last attribute
-                example.ClassLabel = fields[fields.Length - 1].Trim();
+                // add class label if we have it
+                if (hasClassLabel)
+                {
+                    example.ClassLabel = fields[attrCount].Trim();
+                }
 
                 set.Examples.Add(example);
             }

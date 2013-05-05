@@ -65,7 +65,7 @@ namespace DecisionTreeLearner
             }
 
             // return the executable name
-            var exeFileName = proj.GetProperty("AssemblyName") + ".exe";
+            var exeFileName = proj.GetProperty("AssemblyName").EvaluatedValue + ".exe";
             return Path.Combine(assemblyDirectory, exeFileName);
         }
 
