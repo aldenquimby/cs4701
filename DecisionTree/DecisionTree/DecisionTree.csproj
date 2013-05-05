@@ -40,8 +40,10 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Data.cs" />
-    <Compile Include="Tree.cs" />
+    <Compile Include="DataSet.cs" />
+    <Compile Include="DataAttribute.cs" />
+    <Compile Include="Example.cs" />
+    <Compile Include="TreeNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

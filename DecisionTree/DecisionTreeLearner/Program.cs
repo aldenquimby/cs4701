@@ -16,10 +16,10 @@ namespace DecisionTreeLearner
                 var trainingData = DataSet.ConstructFromCsv(fileName);
 
                 // run the learner
-                var decisionTree = new Learner().Run(trainingData);
+                var decisionTree = Learner.ConstructDecisionTree(trainingData);
 
                 // build the classifer
-                var classifierExe = new ClassifierCompiler().CompileClassifier(decisionTree);
+                var classifierExe = Compiler.CompileClassifier(decisionTree);
                 
                 // ouput result
                 Console.WriteLine("Classify new data using this program: " + classifierExe);

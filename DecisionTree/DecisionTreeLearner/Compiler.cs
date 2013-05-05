@@ -13,11 +13,14 @@ using Newtonsoft.Json;
 namespace DecisionTreeLearner
 {
     /// <summary>
-    /// Creates a DecisionTreeClassifier.exe from a decision tree
+    /// Utility for building C# projects
     /// </summary>
-    public class ClassifierCompiler
+    public class Compiler
     {
-        public string CompileClassifier(Tree decisionTree)
+        /// <summary>
+        /// Creates a DecisionTreeClassifier.exe from a decision tree, returning the file path of the new exe
+        /// </summary>
+        public static string CompileClassifier(TreeNode decisionTree)
         {
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             var assemblyDirectory = new FileInfo(assemblyLocation).DirectoryName ?? "";
@@ -66,7 +69,10 @@ namespace DecisionTreeLearner
             return Path.Combine(assemblyDirectory, exeFileName);
         }
 
-        private void ReplaceSerializedTreeLine(string mainFilePath, Tree decisionTree)
+        /// <summary>
+        /// Serializes the decision tree and writes it into the classifier main program
+        /// </summary>
+        private static void ReplaceSerializedTreeLine(string mainFilePath, TreeNode decisionTree)
         {
             // double serialize the tree to escape " characters
             var serializedTree = JsonConvert.SerializeObject(JsonConvert.SerializeObject(decisionTree));
@@ -85,7 +91,7 @@ namespace DecisionTreeLearner
     }
 
     /// <summary>
-    /// Catches all build errors when trying to compile DecisionTreeClassifier
+    /// Catches build errors when trying to compile a C# project
     /// </summary>
     public class SimpleBuildLogger : Logger
     {

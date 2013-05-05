@@ -20,7 +20,7 @@ namespace DecisionTreeClassifier
                 var decisionTree = GetDecisionTree();
 
                 // run the classifier
-                new Classifier().Run(decisionTree, testData);
+                Classifier.Run(decisionTree, testData);
 
                 // output the result
                 Console.WriteLine("Result goes here");
@@ -45,12 +45,12 @@ namespace DecisionTreeClassifier
             return Path.Combine(assemblyDirectory, fileName);
         }
 
-        private static Tree GetDecisionTree()
+        private static TreeNode GetDecisionTree()
         {
             // the DecisionTreeLearner will modify this line to be a JSON serialized tree
             const string serializedDecisionTree = "{\"Name\":\"Parent\",\"Children\":[{\"Name\":\"Child1\",\"Children\":[]},{\"Name\":\"Child2\",\"Children\":[]}]}";
 
-            return JsonConvert.DeserializeObject<Tree>(serializedDecisionTree);
+            return JsonConvert.DeserializeObject<TreeNode>(serializedDecisionTree);
         }
     }
 }
