@@ -13,6 +13,8 @@ namespace DecisionTreeClassifier
         {
             try
             {
+                Console.WriteLine();
+
                 foreach (var example in testData.Examples)
                 {
                     var classLabel = GetClassLabel(decisionTree, example);

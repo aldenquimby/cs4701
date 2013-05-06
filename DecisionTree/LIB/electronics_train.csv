@@ -1,0 +1,14 @@
+under 31, high, No, fair, No
+under 31, high, No, excl, No
+31..40, high, No, fair, Yes
+over 40, med, No, fair, Yes
+over 40, low, Yes, fair, Yes
+over 40, low, Yes, excl, No
+31..40, low, Yes, excl, Yes
+under 31, med, No, fair, No
+under 31, low, Yes, excl, Yes
+over 40, med, Yes, fair, Yes
+under 31, med, Yes, excl, Yes
+31..40, med, No, excl, Yes
+31..40, high, Yes, fair, Yes
+over 40, med, No, excl, No

@@ -28,24 +28,43 @@ namespace DecisionTreeClassifier
                 Console.WriteLine(e.Message);
             }
 
-            Console.WriteLine("Done! Press any key to terminate.");
+            Console.WriteLine("\nDone! Press any key to terminate.");
             Console.ReadKey(); 
         }
 
         private static string GetTestDataFilePath(string[] args)
         {
-            var fileName = args.Length == 1 ? args[0] : "test_data.csv";
+            if (args.Length != 1)
+            {
+                throw new ArgumentException("Usage: DecisionTreeClassifier.exe <test_data_file>");
+            }
 
+            var fileName = args[0];
+
+            // if the file exists, great!
+            if (File.Exists(fileName))
+            {
+                return fileName;
+            }
+
+            // otherwise it might be a relative path
             var assemblyLocation = Assembly.GetExecutingAssembly().Location;
             var assemblyDirectory = new FileInfo(assemblyLocation).DirectoryName ?? "";
 
-            return Path.Combine(assemblyDirectory, fileName);
+            var fullPath = Path.Combine(assemblyDirectory, fileName);
+
+            if (File.Exists(fullPath))
+            {
+                return fullPath;
+            }
+
+            throw new ArgumentException("Could not find file " + fileName);
         }
 
         private static TreeNode GetDecisionTree()
         {
             // the DecisionTreeLearner will modify this line to be a JSON serialized tree
-            const string serializedDecisionTree = "{\"ColNum\":4,\"ClassLabel\":null,\"Children\":{\"Some\":{\"ColNum\":0,\"ClassLabel\":\"Yes\",\"Children\":{}},\"Full\":{\"ColNum\":3,\"ClassLabel\":null,\"Children\":{\"Yes\":{\"ColNum\":8,\"ClassLabel\":null,\"Children\":{\"French\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}},\"Thai\":{\"ColNum\":2,\"ClassLabel\":null,\"Children\":{\"No\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}},\"Yes\":{\"ColNum\":0,\"ClassLabel\":\"Yes\",\"Children\":{}}}},\"Burger\":{\"ColNum\":0,\"ClassLabel\":\"Yes\",\"Children\":{}},\"Italian\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}}}},\"No\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}}}},\"None\":{\"ColNum\":0,\"ClassLabel\":\"No\",\"Children\":{}}}}";
+            const string serializedDecisionTree = "{\"ColNum\":12,\"ClassLabel\":null,\"Children\":{\"4\":{\"ColNum\":0,\"ClassLabel\":null,\"Children\":{\"1\":{\"ColNum\":0,\"ClassLabel\":\"1\",\"Children\":{}},\"0\":{\"ColNum\":5,\"ClassLabel\":null,\"Children\":{\"0\":{\"ColNum\":0,\"ClassLabel\":\"3\",\"Children\":{}},\"1\":{\"ColNum\":7,\"ClassLabel\":null,\"Children\":{\"1\":{\"ColNum\":0,\"ClassLabel\":\"5\",\"Children\":{}},\"0\":{\"ColNum\":0,\"ClassLabel\":\"7\",\"Children\":{}}}}}}}},\"0\":{\"ColNum\":11,\"ClassLabel\":null,\"Children\":{\"0\":{\"ColNum\":7,\"ClassLabel\":null,\"Children\":{\"1\":{\"ColNum\":0,\"ClassLabel\":\"3\",\"Children\":{}},\"0\":{\"ColNum\":0,\"ClassLabel\":\"7\",\"Children\":{}}}},\"1\":{\"ColNum\":2,\"ClassLabel\":null,\"Children\":{\"0\":{\"ColNum\":0,\"ClassLabel\":\"1\",\"Children\":{}},\"1\":{\"ColNum\":0,\"ClassLabel\":\"4\",\"Children\":{}}}}}},\"2\":{\"ColNum\":0,\"ClassLabel\":null,\"Children\":{\"1\":{\"ColNum\":0,\"ClassLabel\":\"1\",\"Children\":{}},\"0\":{\"ColNum\":0,\"ClassLabel\":\"2\",\"Children\":{}}}},\"6\":{\"ColNum\":5,\"ClassLabel\":null,\"Children\":{\"0\":{\"ColNum\":0,\"ClassLabel\":\"6\",\"Children\":{}},\"1\":{\"ColNum\":0,\"ClassLabel\":\"7\",\"Children\":{}}}},\"8\":{\"ColNum\":0,\"ClassLabel\":\"7\",\"Children\":{}},\"5\":{\"ColNum\":0,\"ClassLabel\":\"7\",\"Children\":{}}}}";
 
             return JsonConvert.DeserializeObject<TreeNode>(serializedDecisionTree);
         }
